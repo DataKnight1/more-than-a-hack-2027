@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 250" width="1200" height="250" role="img" aria-labelledby="title desc">
+  <title id="title">More Than A Hack 2027: Agentic Football Research</title>
+  <desc id="desc">Independent blue and garnet football-inspired data science banner, with geometric pitch lines and data nodes.</desc>
+  <rect width="1200" height="250" rx="18" fill="#08172A"/>
+  <rect x="0" y="0" width="18" height="250" fill="#004D98"/>
+  <rect x="18" y="0" width="18" height="250" fill="#A50044"/>
+  <rect x="36" y="0" width="7" height="250" fill="#EDBB00"/>
+  <g opacity=".35" fill="none" stroke="#92b4d9" stroke-width="1.4">
+    <rect x="870" y="30" width="280" height="190" rx="2"/>
+    <path d="M1010 30V220 M870 86H913V164H870 M1150 86H1107V164H1150"/>
+    <circle cx="1010" cy="125" r="42"/>
+    <circle cx="1010" cy="125" r="3" fill="#92b4d9"/>
+  </g>
+  <g stroke="#EDBB00" stroke-width="2" opacity=".85">
+    <path d="M900 155L974 106L1041 163L1112 91" fill="none"/>
+  </g>
+  <g fill="#F6F8FC">
+    <circle cx="900" cy="155" r="6"/><circle cx="974" cy="106" r="6"/><circle cx="1041" cy="163" r="6"/><circle cx="1112" cy="91" r="6"/>
+  </g>
+  <text x="80" y="64" fill="#EDBB00" font-family="Arial, sans-serif" font-size="19" font-weight="700" letter-spacing="3">MORE THAN A HACK 2027</text>
+  <text x="80" y="122" fill="#F6F8FC" font-family="Arial, sans-serif" font-size="40" font-weight="700">AGENTIC FOOTBALL RESEARCH</text>
+  <text x="80" y="169" fill="#C5D4E8" font-family="Arial, sans-serif" font-size="20">CRISP-DM  •  MLOps  •  Autonomous Experiments</text>
+  <rect x="80" y="194" width="560" height="4" rx="2" fill="#004D98"/>
+  <rect x="640" y="194" width="165" height="4" rx="2" fill="#A50044"/>
+  <text x="80" y="223" fill="#9DB1C9" font-family="Arial, sans-serif" font-size="12">INDEPENDENT PARTICIPANT PROJECT  •  NOT AN OFFICIAL CLUB MARK</text>
+</svg>

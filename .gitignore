@@ -1,0 +1,56 @@
+# Keep all hidden directories local, including environments, agents and editor state.
+.*/
+__pycache__/
+*.py[cod]
+.env
+.env.*
+.coverage*
+*.egg-info/
+/build/
+/dist/
+/htmlcov/
+
+# Internal planning and documentation stay in the original local workspace.
+/docs/
+/research/
+/experiments/
+/setup/
+**/*.md
+!/*.md
+/AGENTS.md
+/CLAUDE.md
+
+# Git needs this empty marker to preserve the otherwise empty data directory.
+/data/*
+!/data/.gitkeep
+
+# Generated runs, trained artifacts and local databases never belong in Git.
+/artifacts/
+/features/
+/models/
+/mlruns/
+/mlruns.db*
+/evaluation/reports/
+/evaluation/scoreboard.csv
+/evaluation/results/*
+!/evaluation/results/baseline_raw.csv
+!/evaluation/results/baseline_smooth25.csv
+!/evaluation/results/baseline_smooth50.csv
+!/evaluation/results/baseline_smooth125.csv
+
+# Restricted assets and private answer keys.
+*.mp4
+*.mov
+*.mkv
+*.avi
+*.gzip
+*.pl3container
+*.zip
+*.7z
+*.parquet
+*.pkl
+*.pickle
+*.pdf
+*_possession_gt.csv
+*_possession_gt_meta.json
+*_possession_gt_reference.csv
