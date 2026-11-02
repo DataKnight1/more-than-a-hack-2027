@@ -19,6 +19,7 @@ from possession_lab.atd import Tracking, load_tracking
 
 CACHE_DIR = Path(__file__).resolve().parents[2] / "artifacts" / "local" / "cache"
 LABELS = np.array(["H", "A", "D"])
+OUT_MARGIN_M = 0.3  # about the tracker's position noise
 Array = NDArray[Any]
 Pitch = tuple[float, float]
 
@@ -30,14 +31,14 @@ class HmmParams:  # pylint: disable=too-many-instance-attributes
     control_m: float = 1.5  # a player this close to the ball controls it
     contrast_m: float = 1.5  # home/away nearest-player gap that counts as decisive
     flight_mps: float = 15.0  # a faster ball is in flight, so proximity means little
-    alive_share: float = 0.5  # how much "someone is on the ball" argues the ball is live
+    alive_share: float = 0.9  # how much "someone is on the ball" argues the ball is live
     slow_weight: float = 0.35  # players in their slow regime -> stoppage
     out_weight: float = 2.0  # ball beyond a line, or lost after leaving the pitch
     gap_weight: float = 0.2  # ball lost for longer than gap_s
     gap_s: float = 1.0
-    rolling_weight: float = 0.4  # a rolling ball inside the pitch -> live play
-    team_switch_s: float = 0.6  # evidence needed for a hand-over
-    dead_switch_s: float = 1.0  # evidence needed to start or end a stoppage
+    rolling_weight: float = 0.8  # a rolling ball inside the pitch -> live play
+    team_switch_s: float = 0.15  # evidence needed for a hand-over
+    dead_switch_s: float = 0.5  # evidence needed to start or end a stoppage
 
     def __post_init__(self) -> None:
         for item in fields(self):
@@ -64,7 +65,7 @@ class Features(NamedTuple):
     """Per-frame inputs. Distances are inf and speeds NaN where unknown."""
 
     visible: Array
-    ball: Array  # (n, 2) in metres
+    ball: Array  # (n, 2) in metres from a corner
     d_home: Array  # nearest home player to the ball
     d_away: Array
     ball_speed: Array
@@ -85,18 +86,18 @@ def smooth(x: Array, half: int) -> Array:
 def features(tr: Tracking, pitch: Pitch, fps: int) -> Features:
     """Ball-to-team distances, ball speed and player activity for every frame."""
     scale = np.array(pitch, dtype=np.float32)
-    ball = tr.ball[:, :2] * scale
-    visible = np.isfinite(ball).all(axis=1)
-    dist = np.hypot(*np.moveaxis(tr.players * scale - ball[:, None], -1, 0))
+    xy = tr.ball[:, :2] * scale
+    visible = np.isfinite(xy).all(axis=1)
+    dist = np.hypot(*np.moveaxis(tr.players * scale - xy[:, None], -1, 0))
     dist = np.where(np.isnan(dist), np.inf, dist)
-    step = np.r_[np.nan, np.hypot(*np.diff(ball, axis=0).T) * fps]
+    step = np.r_[np.nan, np.hypot(*np.diff(xy, axis=0).T) * fps]
     speed = np.clip(tr.speed, 0, 12)
     n = np.isfinite(speed).sum(axis=1)
     with np.errstate(invalid="ignore", divide="ignore"):
         activity = np.where(n >= 8, np.nansum(speed, axis=1) / n, np.nan)
     return Features(
         visible,
-        ball,
+        xy,
         dist[:, tr.slot_team == 0].min(axis=1, initial=np.inf),
         dist[:, tr.slot_team == 1].min(axis=1, initial=np.inf),
         np.where(visible, smooth(np.minimum(step, 40), 2), np.nan),
@@ -114,14 +115,14 @@ def team_evidence(f: Features, p: HmmParams) -> Array:
     return np.where(f.visible & np.isfinite(near), proximity * contrast * grounded, 0.0)
 
 
-def slow_log_odds(activity: Array, half: int) -> Array:
-    """Log-odds that players are in this match's slow regime (two-Gaussian fit, no labels)."""
+def slow_log_odds(activity: Array, half: int, fit: Array) -> Array:
+    """Log-odds that players are in their slow regime; two-Gaussian fit on the fit frames."""
     x = np.log(smooth(activity, half) + 0.1)
     ok = np.isfinite(x)
     out = np.zeros(len(x))
-    if ok.sum() < 100:
+    if (ok & fit).sum() < 100:
         return out
-    xs = x[ok, None]
+    xs = x[ok & fit, None]
     w, mu, sd = np.full(2, 0.5), np.quantile(xs, [0.25, 0.75]), np.full(2, xs.std() / 2 + 1e-3)
     for _ in range(100):
         logp = np.log(w) - np.log(sd) - 0.5 * ((xs - mu) / sd) ** 2
@@ -129,6 +130,7 @@ def slow_log_odds(activity: Array, half: int) -> Array:
         r /= r.sum(axis=1, keepdims=True)
         w, mu = r.mean(axis=0), (r * xs).sum(axis=0) / r.sum(axis=0)
         sd = np.sqrt((r * (xs - mu) ** 2).sum(axis=0) / r.sum(axis=0)) + 1e-3
+    xs = x[ok, None]
     logp = np.log(w) - np.log(sd) - 0.5 * ((xs - mu) / sd) ** 2
     slow = int(mu.argmin())
     out[ok] = np.clip(logp[:, slow] - logp[:, 1 - slow], -3, 3)
@@ -144,17 +146,17 @@ def run_lengths(mask: Array) -> Array:
     return out
 
 
-def dead_evidence(f: Features, p: HmmParams, pitch: Pitch, fps: int) -> Array:
+def dead_evidence(f: Features, p: HmmParams, pitch: Pitch, fps: int, graded: Array) -> Array:
     """Positive where the ball looks out of play, negative where it looks live."""
     x, y = f.ball[:, 0], f.ball[:, 1]
     with np.errstate(invalid="ignore"):
-        out = f.visible & (np.maximum.reduce([-x, x - pitch[0], -y, y - pitch[1]]) > 1.0)
+        out = f.visible & (np.maximum.reduce([-x, x - pitch[0], -y, y - pitch[1]]) > OUT_MARGIN_M)
     # The tracker usually loses a ball that has left the pitch, so "out" carries through the gap.
     last_seen = np.maximum.accumulate(np.where(f.visible, np.arange(len(x)), 0))
     out |= ~f.visible & out[last_seen]
     rolling = np.where(f.visible & ~out, np.tanh(np.nan_to_num(f.ball_speed) / 4.0), 0.0)
     evidence: Array = (
-        p.slow_weight * slow_log_odds(f.activity, fps)
+        p.slow_weight * slow_log_odds(f.activity, fps, graded)
         + p.out_weight * out
         + p.gap_weight * (run_lengths(~f.visible) >= p.gap_s * fps)
         - p.rolling_weight * rolling
@@ -178,17 +180,35 @@ def viterbi(scores: Array, team_cost: float, dead_cost: float) -> NDArray[np.int
     return path
 
 
+def snap_to_contact(codes: Array, f: Features, p: HmmParams, fps: int) -> Array:
+    """Move each hand-over to the first frame (within 1 s) where the new team reaches the ball."""
+    out = codes.copy()
+    near = (f.d_home, f.d_away)
+    for t in (np.flatnonzero(codes[1:] != codes[:-1]) + 1).tolist():
+        old, new = int(codes[t - 1]), int(codes[t])
+        if 2 in (old, new):
+            continue
+        reached = np.flatnonzero(near[new][t : t + fps] < p.control_m)
+        if len(reached) and np.all(codes[t : t + reached[0]] == new):
+            out[t : t + reached[0]] = old
+    return out
+
+
 def decode(
     f: Features, p: HmmParams, blocks: list[tuple[int, int]], pitch: Pitch, fps: int
 ) -> Array:
     """Labels for every frame: Viterbi inside each [start, stop) block, X elsewhere."""
+    graded = np.zeros(len(f.visible), dtype=bool)
+    for start, stop in blocks:
+        graded[start:stop] = True
     margin = team_evidence(f, p)
-    dead = dead_evidence(f, p, pitch, fps) + (1 - p.alive_share) * np.abs(margin) / 2
+    dead = dead_evidence(f, p, pitch, fps, graded) + (1 - p.alive_share) * np.abs(margin) / 2
     scores = np.column_stack([margin / 2, -margin / 2, dead])
     labels = np.full(len(margin), "X")
     for start, stop in blocks:
         path = viterbi(scores[start:stop], p.team_switch_s * fps, p.dead_switch_s * fps)
-        labels[start:stop] = LABELS[path]
+        f_block = Features(*(x[start:stop] for x in f))
+        labels[start:stop] = LABELS[snap_to_contact(path, f_block, p, fps)]
     return labels
 
 

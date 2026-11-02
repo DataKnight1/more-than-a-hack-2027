@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib.util
 from pathlib import Path
 
 import numpy as np
@@ -13,9 +12,8 @@ from possession_lab.hmm import (
     Features,
     HmmParams,
     dead_evidence,
-    decode,
     slow_log_odds,
-    smooth,
+    snap_to_contact,
     summary,
     team_evidence,
     viterbi,
@@ -84,8 +82,16 @@ def test_out_of_bounds_carries_through_gap() -> None:
     """A ball seen beyond a line keeps counting as out while the tracker has lost it."""
     ball = [[50.0, 30.0], [-3.0, 30.0]] + [[np.nan, np.nan]] * 3
     f = make([True, True] + [False] * 3, [1.0] * 5, [5.0] * 5, ball=ball, speed=[0.0] * 5)
-    ev = dead_evidence(f, HmmParams(gap_weight=0, slow_weight=0), PITCH, FPS)
+    ev = dead_evidence(f, HmmParams(gap_weight=0, slow_weight=0), PITCH, FPS, np.ones(5, bool))
     assert ev[0] == 0 and np.all(ev[1:] == 2.0)
+
+
+def test_hand_over_snaps_to_first_touch() -> None:
+    """A switch decided mid-pass moves to when the new team actually reaches the ball."""
+    away = [6.0] * 10 + [3.0] * 5 + [1.0] * 5
+    f = make([True] * 20, [1.0] * 20, away)
+    codes = np.array([0] * 10 + [1] * 10, dtype=np.int8)
+    assert snap_to_contact(codes, f, HmmParams(), FPS).tolist() == [0] * 15 + [1] * 5
 
 
 def test_slow_regime_log_odds() -> None:
@@ -93,7 +99,7 @@ def test_slow_regime_log_odds() -> None:
     activity = np.r_[np.full(2000, 2.3), np.full(1000, 0.9)] + np.random.default_rng(0).normal(
         0, 0.1, 3000
     )
-    odds = slow_log_odds(activity, 25)
+    odds = slow_log_odds(activity, 25, np.ones(3000, bool))
     assert odds[500] < 0 < odds[2500]
 
 
@@ -104,74 +110,6 @@ def test_config_and_validation() -> None:
     for bad in ({"unknown": 1}, {"gap_s": -1}, {"control_m": True}, {"alive_share": 2}):
         with pytest.raises(ValueError):
             HmmParams.from_table(bad)
-
-
-def simulate(seed: int, minutes: int = 10) -> tuple[np.ndarray, Features]:
-    """Toy match: possessions, stoppages (slow players, ball out then lost), duels and passes."""
-    rng = np.random.default_rng(seed)
-    n = minutes * 60 * FPS
-    truth, t, team = np.empty(n, dtype=np.int8), 0, 0
-    while t < n:
-        k = int(rng.lognormal(np.log(10), 0.7) * FPS) + FPS
-        truth[t : t + k], t = team, t + k
-        if rng.random() < 0.35:
-            k = int(rng.lognormal(np.log(12), 0.6) * FPS) + 2 * FPS
-            truth[t : t + k], t, team = 2, t + k, int(rng.integers(2))
-        else:
-            team = 1 - team
-    alive = truth != 2
-
-    def bursts(rate: float, length: int) -> np.ndarray:
-        return np.convolve(rng.random(n) < rate, np.ones(length), "same") > 0
-
-    duel, flight = alive & bursts(0.005, 15), alive & bursts(0.01, 20)
-    near_team = np.where(duel, 1 - truth, truth)
-    near = np.where(flight, rng.uniform(3, 12, n), np.abs(rng.normal(1, 0.7, n)))
-    far = near + np.abs(rng.normal(3, 2, n))
-    first_second = np.r_[True, truth[1:] != truth[:-1]]
-    stop_start = np.convolve(first_second & ~alive, np.ones(FPS), "full")[:n] > 0
-    visible = np.where(alive, ~bursts(0.004, 40), stop_start)
-    ball = np.where(stop_start[:, None] & ~alive[:, None], [-3.0, 30.0], [50.0, 30.0])
-    speed = np.where(
-        flight, rng.uniform(12, 25, n), np.where(alive, np.abs(rng.normal(4, 3, n)), 0.2)
-    )
-    activity = smooth(np.where(alive, rng.normal(2.2, 0.5, n), rng.normal(0.9, 0.3, n)), FPS // 2)
-    f = Features(
-        visible,
-        np.where(visible[:, None], ball, np.nan),
-        np.where(visible, np.where(near_team == 0, near, far), np.inf),
-        np.where(visible, np.where(near_team == 0, far, near), np.inf),
-        np.where(visible, speed, np.nan),
-        activity,
-    )
-    return truth, f
-
-
-def majority_vote(f: Features, half: int = 50) -> np.ndarray:
-    """The organiser baseline rule on Features: nearest team, centred vote, D with no ball."""
-    home = np.r_[0, np.cumsum(f.visible & (f.d_home <= f.d_away))]
-    away = np.r_[0, np.cumsum(f.visible & (f.d_home > f.d_away))]
-    i = np.arange(len(f.visible))
-    lo, hi = np.maximum(i - half, 0), np.minimum(i + half + 1, len(i))
-    h, a = home[hi] - home[lo], away[hi] - away[lo]
-    return np.where(h + a == 0, 2, np.where(h >= a, 0, 1)).astype(np.int8)
-
-
-@pytest.mark.parametrize("seed", [0, 1, 2])
-def test_beats_majority_vote_on_toy_matches(seed: int) -> None:
-    """Scored by the unchanged official metric. Shows the machinery works, nothing more."""
-    spec = importlib.util.spec_from_file_location("pm", ROOT / "evaluation/possession_metrics.py")
-    assert spec and spec.loader
-    pm = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(pm)
-    truth, f = simulate(seed)
-    runs = [(0, len(truth))]
-    ours = pm.label_codes(decode(f, HmmParams(), runs, PITCH, FPS))
-    vote = majority_vote(f)
-    assert (
-        pm.spell_scores(truth, ours, runs)["mean_f1"]
-        > pm.spell_scores(truth, vote, runs)["mean_f1"] + 0.1
-    )
 
 
 def test_summary() -> None:

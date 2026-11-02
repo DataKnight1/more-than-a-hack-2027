@@ -1,5 +1,5 @@
 # Three-state Viterbi possession decoder (src/possession_lab/hmm.py).
-# Values are physical priors set before any scoring. Never tune them on the public 5 minutes.
+# Tuned on open Bundesliga matches (scripts/open_data_check.py), never on our own match.
 [experiment]
 name = "possession-hmm"
 seed = 42
@@ -12,11 +12,11 @@ apply_ungraded_x = true
 control_m = 1.5
 contrast_m = 1.5
 flight_mps = 15.0
-alive_share = 0.5
+alive_share = 0.9
 slow_weight = 0.35
 out_weight = 2.0
 gap_weight = 0.2
 gap_s = 1.0
-rolling_weight = 0.4
-team_switch_s = 0.6
-dead_switch_s = 1.0
+rolling_weight = 0.8
+team_switch_s = 0.15
+dead_switch_s = 0.5

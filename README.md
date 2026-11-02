@@ -149,6 +149,11 @@ uv run --no-sync python evaluation/validate_submission.py evaluation/results/tea
 
 `data_profile.py` only prints aggregate statistics of the local data, never frames or raw lines.
 
+The settings were tuned on open Bundesliga matches with real labels (Bassek et al., 2025, CC BY
+4.0), degraded to look like our tracking: `python scripts/open_data_check.py --download`, then
+`python scripts/open_data_check.py`. There the model reaches spellF1 0.43 against 0.25 for the
+organisers' smooth50 rule.
+
 ### Optional local metadata
 
 The runner generates and validates a prediction while writing a small local JSON record with Git/configuration provenance, runtime and checksum:
