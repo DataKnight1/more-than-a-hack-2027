@@ -40,10 +40,12 @@ def set_ungraded_to_x(labels: NDArray[np.str_]) -> NDArray[np.str_]:
 
 
 def predict(config: ModelConfig) -> NDArray[np.str_]:
-    """Predict the full tactical match using the official nearest-player implementation.
+    """Predict the full tactical match with the configured model family.
+
+    ``nearest_player_majority`` is the official baseline, ``possession_hmm`` the Viterbi decoder.
 
     Args:
-        config: Validated experiment and smoothing settings.
+        config: Validated experiment and model settings.
 
     Returns:
         Exactly 199,319 possession labels ``H``, ``A``, ``D`` or ``X``.
@@ -51,10 +53,15 @@ def predict(config: ModelConfig) -> NDArray[np.str_]:
     Raises:
         ValueError: If the returned prediction violates contract invariants.
     """
-    from starter.baseline import build, smooth  # pylint: disable=import-outside-toplevel
+    labels: NDArray[np.str_]
+    if config.family == "possession_hmm":
+        from possession_lab.hmm import predict_hmm  # pylint: disable=import-outside-toplevel
 
-    codes = build()
-    labels: NDArray[np.str_] = smooth(codes, config.smoothing_half_window)
+        labels = predict_hmm(config.hmm)
+    else:
+        from starter.baseline import build, smooth  # pylint: disable=import-outside-toplevel
+
+        labels = smooth(build(), config.smoothing_half_window)
     if len(labels) != FRAME_COUNT:
         raise ValueError(f"Expected {FRAME_COUNT} frames, got {len(labels)}")
     if config.apply_ungraded_x:

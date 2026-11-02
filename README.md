@@ -135,6 +135,20 @@ Write-Output "Deterministic regeneration verified."
 
 Keep the declared inputs and configuration unchanged between these runs. The configuration sets `apply_ungraded_x = false` to preserve the organizer baseline exactly, including its predictions outside graded intervals.
 
+### Possession HMM (work in progress)
+
+`possession_hmm` labels H/A/D with a Viterbi pass over per-frame evidence: ball-to-player
+distances, ball out of play or lost, and how fast the players move. Settings are in
+`configs/models/possession_hmm.toml`.
+
+```powershell
+uv run --no-sync python scripts/data_profile.py
+uv run --no-sync python -m possession_lab.cli predict --config configs/models/possession_hmm.toml --output evaluation/results/team_hmm.csv
+uv run --no-sync python evaluation/validate_submission.py evaluation/results/team_hmm.csv
+```
+
+`data_profile.py` only prints aggregate statistics of the local data, never frames or raw lines.
+
 ### Optional local metadata
 
 The runner generates and validates a prediction while writing a small local JSON record with Git/configuration provenance, runtime and checksum:
