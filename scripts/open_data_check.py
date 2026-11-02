@@ -109,7 +109,7 @@ def degrade(
     for a in np.flatnonzero((truth != 2) & (rng.random(n) < live_rate / FPS)):  # occlusions in play
         lost[a : a + int(max(4.0, rng.lognormal(np.log(8), 0.6)) * FPS)] = True
     ball = half["ball"].copy()
-    ball[:, :2] += rng.normal(0, 0.3, (n, 2))
+    ball[:, :2] += rng.normal(0, 0.015, (n, 2))  # our tracker's ball is never perfectly still
     ball[lost] = np.nan
     ball[rng.random(n) > 0.15, 2] = np.nan  # height is only filled in now and then
     clean = half["players"]

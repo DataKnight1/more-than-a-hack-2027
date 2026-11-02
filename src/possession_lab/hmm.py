@@ -30,7 +30,7 @@ class HmmParams:  # pylint: disable=too-many-instance-attributes
 
     control_m: float = 1.5  # a player this close to the ball controls it
     contrast_m: float = 1.5  # home/away nearest-player gap that counts as decisive
-    flight_mps: float = 15.0  # a faster ball is in flight, so proximity means little
+    flight_mps: float = 8.0  # a faster ball is in flight (a pass), so proximity means little
     alive_share: float = 0.9  # how much "someone is on the ball" argues the ball is live
     slow_weight: float = 0.35  # players in their slow regime -> stoppage
     out_weight: float = 2.0  # ball beyond a line, or lost after leaving the pitch
@@ -38,7 +38,7 @@ class HmmParams:  # pylint: disable=too-many-instance-attributes
     gap_s: float = 1.0
     rolling_weight: float = 0.8  # a rolling ball inside the pitch -> live play
     team_switch_s: float = 0.15  # evidence needed for a hand-over
-    dead_switch_s: float = 0.5  # evidence needed to start or end a stoppage
+    dead_switch_s: float = 1.0  # evidence needed to start or end a stoppage
 
     def __post_init__(self) -> None:
         for item in fields(self):
