@@ -8,8 +8,9 @@ should do next. Everything here can be reproduced with the commands at the botto
 - I built a possession model that labels every frame H / A / D.
 - I couldn't test it on our own match (we only have 5 minutes of answers and we're not allowed to
   tune on them), so I tested it on 7 open Bundesliga matches that do have labels.
-- There it gets **spellF1 0.44** vs **0.26** for the organisers' baseline. On our match the
-  previous version gave 369 possessions of 9.4 s on average, which looks realistic.
+- There it gets **spellF1 0.44** vs **0.26** for the organisers' baseline. On our match it gives
+  367 possessions of 9.5 s on average, which looks realistic.
+- It's not perfect (0.44 out of 1.0), but it works correctly and gives the same file every run.
 
 ## The challenge in one minute
 
@@ -88,9 +89,17 @@ the 8 m/s pass rule, the smaller 0.3 m out-of-play margin, snapping changes to t
 touch, and (a little) the team-spread rule.
 
 Results on our match (no answers needed, just sanity): first version 212 possessions (too sticky),
-then 485 (too jumpy, because of a bug in my test setup that I fixed), now **369 possessions,
-9.4 s average, 45% dead ball, Barça 61% of live time**. That fits what other teams estimate and
+then 485 (too jumpy, because of a bug in my test setup that I fixed), now **367 possessions,
+9.5 s average, 45% dead ball, Barça 62% of live time**. That fits what other teams estimate and
 normal LaLiga numbers.
+
+Checks I did on our match:
+
+- **Same file every run**: running it twice gives the same SHA256 (`2302f46a...e0cd4c`).
+- **Pipeline check on the public 5 minutes** (only to see that it works, not to tune): home and
+  away are the right way round (87% of live frames get the right team), frames line up, and it
+  finds 18 possessions where there are 17. It also confirms dead ball is the weak spot: when it
+  says dead ball it's almost always right, but it misses about 40% of them.
 
 Honest caveats: the Bundesliga labels switch possession a bit more often than the organisers'
 labels, so the model might be slightly too jumpy for our match. And the real score always moves
