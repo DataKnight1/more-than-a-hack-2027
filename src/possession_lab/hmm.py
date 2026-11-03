@@ -37,6 +37,7 @@ class HmmParams:  # pylint: disable=too-many-instance-attributes
     gap_weight: float = 0.2  # ball lost for longer than gap_s
     gap_s: float = 1.0
     rolling_weight: float = 0.8  # a rolling ball inside the pitch -> live play
+    spread_weight: float = 0.006  # per metre the home team is more spread out than the away team
     team_switch_s: float = 0.15  # evidence needed for a hand-over
     dead_switch_s: float = 1.0  # evidence needed to start or end a stoppage
 
@@ -70,6 +71,7 @@ class Features(NamedTuple):
     d_away: Array
     ball_speed: Array
     activity: Array  # mean player speed
+    spread: Array  # home minus away team spread in metres; the team on the ball spreads out
 
 
 def smooth(x: Array, half: int) -> Array:
@@ -83,12 +85,23 @@ def smooth(x: Array, half: int) -> Array:
         return np.where(n > 0, (total[hi] - total[lo]) / n, np.nan)
 
 
+def team_spread(points: Array) -> Array:
+    """Std of x plus std of y over a team's tracked players, NaN when nobody is tracked."""
+    n = np.isfinite(points[..., 0]).sum(axis=1)[:, None]
+    with np.errstate(invalid="ignore", divide="ignore"):
+        mean = np.nansum(points, axis=1) / n
+        var = np.nansum((points - mean[:, None]) ** 2, axis=1) / n
+    spread: Array = np.sqrt(var).sum(axis=1)
+    return spread
+
+
 def features(tr: Tracking, pitch: Pitch, fps: int) -> Features:
     """Ball-to-team distances, ball speed and player activity for every frame."""
     scale = np.array(pitch, dtype=np.float32)
     xy = tr.ball[:, :2] * scale
     visible = np.isfinite(xy).all(axis=1)
-    dist = np.hypot(*np.moveaxis(tr.players * scale - xy[:, None], -1, 0))
+    players = tr.players * scale
+    dist = np.hypot(*np.moveaxis(players - xy[:, None], -1, 0))
     dist = np.where(np.isnan(dist), np.inf, dist)
     step = np.r_[np.nan, np.hypot(*np.diff(xy, axis=0).T) * fps]
     speed = np.clip(tr.speed, 0, 12)
@@ -102,17 +115,22 @@ def features(tr: Tracking, pitch: Pitch, fps: int) -> Features:
         dist[:, tr.slot_team == 1].min(axis=1, initial=np.inf),
         np.where(visible, smooth(np.minimum(step, 40), 2), np.nan),
         activity,
+        smooth(
+            team_spread(players[:, tr.slot_team == 0]) - team_spread(players[:, tr.slot_team == 1]),
+            fps,
+        ),
     )
 
 
 def team_evidence(f: Features, p: HmmParams) -> Array:
-    """+1 when home is clearly on the ball, -1 for away, ~0 when lost or far from everyone."""
+    """Positive for home, negative for away: who is on the ball, plus a nudge from team spread."""
     near = np.minimum(f.d_home, f.d_away)
     with np.errstate(invalid="ignore", divide="ignore"):
         proximity = np.exp(-np.maximum(near - p.control_m, 0) / 2.0)
         contrast = np.nan_to_num(np.tanh((f.d_away - f.d_home) / p.contrast_m))
         grounded = 1 / (1 + (np.nan_to_num(f.ball_speed) / p.flight_mps) ** 4)
-    return np.where(f.visible & np.isfinite(near), proximity * contrast * grounded, 0.0)
+    on_ball = np.where(f.visible & np.isfinite(near), proximity * contrast * grounded, 0.0)
+    return on_ball + p.spread_weight * np.nan_to_num(f.spread)
 
 
 def slow_log_odds(activity: Array, half: int, fit: Array) -> Array:

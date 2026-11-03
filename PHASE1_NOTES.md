@@ -8,8 +8,8 @@ should do next. Everything here can be reproduced with the commands at the botto
 - I built a possession model that labels every frame H / A / D.
 - I couldn't test it on our own match (we only have 5 minutes of answers and we're not allowed to
   tune on them), so I tested it on 7 open Bundesliga matches that do have labels.
-- There it gets **spellF1 0.43** vs **0.26** for the organisers' baseline. On our match it gives
-  369 possessions of 9.4 s on average, which looks realistic.
+- There it gets **spellF1 0.44** vs **0.26** for the organisers' baseline. On our match the
+  previous version gave 369 possessions of 9.4 s on average, which looks realistic.
 
 ## The challenge in one minute
 
@@ -61,6 +61,8 @@ for every change (Viterbi). In football terms:
 - **Dead ball** comes from: the ball more than 0.3 m over a line (also while the tracker has lost
   it afterwards), players walking, and long ball gaps. A rolling ball means play is live.
 - **Ball lost but players still running** = keep the current possession.
+- **The team with the ball spreads out**, so the more spread-out team gets a small extra nudge.
+  This also helps while the ball is lost.
 - Frames outside the two halves get `X` (they're not scored).
 
 Code: `src/possession_lab/hmm.py` (model) and `src/possession_lab/atd.py` (reads the tracking).
@@ -78,12 +80,12 @@ I picked the settings on 5 matches and kept 2 apart as a final check:
 | | spellF1 | macroF1 |
 |---|---|---|
 | organisers' baseline (smooth50) | 0.257 | 0.677 |
-| **my model, all 7 matches** | **0.431** | **0.838** |
-| my model, the 2 held-out matches | 0.425 / 0.455 | |
+| **my model, all 7 matches** | **0.438** | **0.846** |
+| my model, the 2 held-out matches | 0.438 / 0.476 | |
 
 What made the biggest difference: a lower switching cost (the first version was way too sticky),
-the 8 m/s pass rule, the smaller 0.3 m out-of-play margin, and snapping changes to the first
-touch.
+the 8 m/s pass rule, the smaller 0.3 m out-of-play margin, snapping changes to the first
+touch, and (a little) the team-spread rule.
 
 Results on our match (no answers needed, just sanity): first version 212 possessions (too sticky),
 then 485 (too jumpy, because of a bug in my test setup that I fixed), now **369 possessions,
@@ -122,12 +124,38 @@ uv run --no-sync python scripts/open_data_check.py --download
 uv run --no-sync python scripts/open_data_check.py
 ```
 
+## Where the points are lost
+
+I checked on the open matches what we'd score if one part were perfect:
+
+| if this were perfect | spellF1 |
+|---|---|
+| nothing (current model) | 0.44 |
+| ball never lost during play | 0.44 (no gain) |
+| dead-ball detection | 0.48 |
+| which team has the ball during live play | 0.90 |
+
+So almost everything is in deciding **which team has the ball and when it changes**. Recovering
+the ball from the video is not worth our time.
+
+I also tried a small learned model (trained on the open matches) for "which team has the ball".
+It picks the right team on many more frames (84% vs 73%), but it did **not** give better
+possessions, because its clues change slowly and blur the exact moment of a change. Only the
+team-spread part helped, so that is the one I kept, as a simple rule.
+
+One warning: in the Bundesliga labels 43% of possessions last under 3 seconds. The organisers'
+5 public minutes average 14 s per possession, so their labels have far fewer tiny possessions.
+We shouldn't chase the short ones.
+
 ## What I'd do next (can be split)
 
-1. **Learn real changes of possession** from the open matches: at every touch, how likely is it
-   that the other team really took over? Other teams got the biggest gains from this.
-2. **Guess what happens inside long ball gaps** from how both teams move and are shaped.
-3. **Restarts**: detect who takes the throw-in / free kick / kick-off.
+1. **Timing of changes**: a lot of the wrong-team frames are within a second of a real change.
+   Better detection of the actual touch (ball changes direction or speed near a player) should
+   help.
+2. **Dead-ball detection**: restarts (still ball that gets kicked, players lining up) and
+   starting stoppages right when the ball crosses the line.
+3. **Long wrong stretches**: half of the wrong-team frames are in stretches over 3 s. Worth
+   looking at a few of those in the video to see what goes wrong (just watching, no labelling).
 4. **Submission**: technical document, final reproducibility check, clean public repo, file
    named `<team_name>.csv`.
 

@@ -66,6 +66,7 @@ def make(
         np.array(d_away),
         np.array(kw.get("speed", [2.0] * n)),
         np.full(n, np.nan),
+        np.array(kw.get("spread", [np.nan] * n)),
     )
 
 
@@ -76,6 +77,13 @@ def test_team_evidence() -> None:
     )
     ev = team_evidence(f, HmmParams())
     assert ev[0] > 0.9 and 0 < ev[1] < 0.05 and ev[2] < 0.2 and ev[3] == 0
+
+
+def test_spread_nudges_towards_the_spread_out_team() -> None:
+    """With nobody on the ball, the more spread-out team gets a small edge."""
+    f = make([False] * 2, [np.inf] * 2, [np.inf] * 2, spread=[5.0, -5.0])
+    ev = team_evidence(f, HmmParams())
+    assert ev[0] > 0 > ev[1] and abs(ev[0]) < 0.1
 
 
 def test_out_of_bounds_carries_through_gap() -> None:
