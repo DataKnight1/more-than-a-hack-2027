@@ -11,7 +11,7 @@ from possession_lab.config import load_config
 from possession_lab.hmm import (
     Features,
     HmmParams,
-    dead_evidence,
+    ball_out,
     slow_log_odds,
     snap_to_contact,
     summary,
@@ -67,6 +67,7 @@ def make(
         np.array(kw.get("speed", [2.0] * n)),
         np.full(n, np.nan),
         np.array(kw.get("spread", [np.nan] * n)),
+        np.zeros(n, dtype=bool),
     )
 
 
@@ -87,11 +88,10 @@ def test_spread_nudges_towards_the_spread_out_team() -> None:
 
 
 def test_out_of_bounds_carries_through_gap() -> None:
-    """A ball seen beyond a line keeps counting as out while the tracker has lost it."""
-    ball = [[50.0, 30.0], [-3.0, 30.0]] + [[np.nan, np.nan]] * 3
-    f = make([True, True] + [False] * 3, [1.0] * 5, [5.0] * 5, ball=ball, speed=[0.0] * 5)
-    ev = dead_evidence(f, HmmParams(gap_weight=0, slow_weight=0), PITCH, FPS, np.ones(5, bool))
-    assert ev[0] == 0 and np.all(ev[1:] == 2.0)
+    """A ball seen beyond a line stays out while the tracker has lost it."""
+    xy = np.array([[50.0, 30.0], [-3.0, 30.0]] + [[np.nan, np.nan]] * 3)
+    visible = np.isfinite(xy).all(axis=1)
+    assert ball_out(xy, visible, PITCH).tolist() == [False, True, True, True, True]
 
 
 def test_hand_over_snaps_to_first_touch() -> None:

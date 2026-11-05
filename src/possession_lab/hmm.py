@@ -18,7 +18,7 @@ from numpy.typing import NDArray
 from possession_lab.atd import Tracking, load_tracking
 
 CACHE_DIR = Path(__file__).resolve().parents[2] / "artifacts" / "local" / "cache"
-LABELS = np.array(["H", "A", "D"])
+LABELS = np.array(["H", "A", "D", "X"])
 OUT_MARGIN_M = 0.3  # about the tracker's position noise
 Array = NDArray[Any]
 Pitch = tuple[float, float]
@@ -72,6 +72,7 @@ class Features(NamedTuple):
     ball_speed: Array
     activity: Array  # mean player speed
     spread: Array  # home minus away team spread in metres; the team on the ball spreads out
+    out: Array  # ball beyond a line, or lost since it was last seen there
 
 
 def smooth(x: Array, half: int) -> Array:
@@ -95,8 +96,18 @@ def team_spread(points: Array) -> Array:
     return spread
 
 
+def ball_out(xy: Array, visible: Array, pitch: Pitch) -> Array:
+    """Ball beyond a line. The tracker usually loses such a ball, so it stays out until seen."""
+    x, y = xy[:, 0], xy[:, 1]
+    with np.errstate(invalid="ignore"):
+        out = visible & (np.maximum.reduce([-x, x - pitch[0], -y, y - pitch[1]]) > OUT_MARGIN_M)
+    last_seen = np.maximum.accumulate(np.where(visible, np.arange(len(x)), 0))
+    carried: Array = out | (~visible & out[last_seen])
+    return carried
+
+
 def features(tr: Tracking, pitch: Pitch, fps: int) -> Features:
-    """Ball-to-team distances, ball speed and player activity for every frame."""
+    """Ball-to-team distances, ball speed, player activity and team spread for every frame."""
     scale = np.array(pitch, dtype=np.float32)
     xy = tr.ball[:, :2] * scale
     visible = np.isfinite(xy).all(axis=1)
@@ -119,6 +130,7 @@ def features(tr: Tracking, pitch: Pitch, fps: int) -> Features:
             team_spread(players[:, tr.slot_team == 0]) - team_spread(players[:, tr.slot_team == 1]),
             fps,
         ),
+        ball_out(xy, visible, pitch),
     )
 
 
@@ -164,18 +176,12 @@ def run_lengths(mask: Array) -> Array:
     return out
 
 
-def dead_evidence(f: Features, p: HmmParams, pitch: Pitch, fps: int, graded: Array) -> Array:
+def dead_evidence(f: Features, p: HmmParams, fps: int, graded: Array) -> Array:
     """Positive where the ball looks out of play, negative where it looks live."""
-    x, y = f.ball[:, 0], f.ball[:, 1]
-    with np.errstate(invalid="ignore"):
-        out = f.visible & (np.maximum.reduce([-x, x - pitch[0], -y, y - pitch[1]]) > OUT_MARGIN_M)
-    # The tracker usually loses a ball that has left the pitch, so "out" carries through the gap.
-    last_seen = np.maximum.accumulate(np.where(f.visible, np.arange(len(x)), 0))
-    out |= ~f.visible & out[last_seen]
-    rolling = np.where(f.visible & ~out, np.tanh(np.nan_to_num(f.ball_speed) / 4.0), 0.0)
+    rolling = np.where(f.visible & ~f.out, np.tanh(np.nan_to_num(f.ball_speed) / 4.0), 0.0)
     evidence: Array = (
         p.slow_weight * slow_log_odds(f.activity, fps, graded)
-        + p.out_weight * out
+        + p.out_weight * f.out
         + p.gap_weight * (run_lengths(~f.visible) >= p.gap_s * fps)
         - p.rolling_weight * rolling
     )
@@ -204,7 +210,7 @@ def snap_to_contact(codes: Array, f: Features, p: HmmParams, fps: int) -> Array:
     near = (f.d_home, f.d_away)
     for t in (np.flatnonzero(codes[1:] != codes[:-1]) + 1).tolist():
         old, new = int(codes[t - 1]), int(codes[t])
-        if 2 in (old, new):
+        if max(old, new) > 1:  # only H <-> A hand-overs
             continue
         reached = np.flatnonzero(near[new][t : t + fps] < p.control_m)
         if len(reached) and np.all(codes[t : t + reached[0]] == new):
@@ -212,21 +218,20 @@ def snap_to_contact(codes: Array, f: Features, p: HmmParams, fps: int) -> Array:
     return out
 
 
-def decode(
-    f: Features, p: HmmParams, blocks: list[tuple[int, int]], pitch: Pitch, fps: int
-) -> Array:
+def decode(f: Features, p: HmmParams, blocks: list[tuple[int, int]], fps: int) -> Array:
     """Labels for every frame: Viterbi inside each [start, stop) block, X elsewhere."""
     graded = np.zeros(len(f.visible), dtype=bool)
     for start, stop in blocks:
         graded[start:stop] = True
     margin = team_evidence(f, p)
-    dead = dead_evidence(f, p, pitch, fps, graded) + (1 - p.alive_share) * np.abs(margin) / 2
+    dead = dead_evidence(f, p, fps, graded) + (1 - p.alive_share) * np.abs(margin) / 2
     scores = np.column_stack([margin / 2, -margin / 2, dead])
-    labels = np.full(len(margin), "X")
+    codes = np.full(len(margin), 3, dtype=np.int8)
     for start, stop in blocks:
-        path = viterbi(scores[start:stop], p.team_switch_s * fps, p.dead_switch_s * fps)
-        f_block = Features(*(x[start:stop] for x in f))
-        labels[start:stop] = LABELS[snap_to_contact(path, f_block, p, fps)]
+        codes[start:stop] = viterbi(
+            scores[start:stop], p.team_switch_s * fps, p.dead_switch_s * fps
+        )
+    labels: Array = LABELS[snap_to_contact(codes, f, p, fps)]
     return labels
 
 
@@ -255,6 +260,6 @@ def predict_hmm(p: HmmParams) -> Array:
     slot_team = np.asarray(baseline.team_of_each_track(meta), dtype=np.int8)
     tracking = load_tracking(Path(raw), slot_team, int(games.source_frames("tactical")), CACHE_DIR)
     blocks = [(int(a), int(b) + 1) for _, a, b in games.half_video_blocks(games.GAME)]
-    labels = decode(features(tracking, pitch, fps), p, blocks, pitch, fps)
+    labels = decode(features(tracking, pitch, fps), p, blocks, fps)
     print(summary(labels, blocks, fps))
     return labels

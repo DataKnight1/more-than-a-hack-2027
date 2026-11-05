@@ -145,7 +145,7 @@ def evaluate(
             n, start = len(half["truth"]), sum(len(t) for t in truth)
             runs.append((start, start + n))
             truth.append(half["truth"])
-            ours.append(pm.label_codes(decode(f, params, [(0, n)], PITCH, FPS)))
+            ours.append(pm.label_codes(decode(f, params, [(0, n)], FPS)))
             nearest = np.where(f.visible, np.where(f.d_home <= f.d_away, 0, 1), -1).astype(np.int8)
             vote.append(pm.label_codes(baseline.smooth(nearest, 50)))
         gt = np.concatenate(truth)
