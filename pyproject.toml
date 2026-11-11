@@ -1,7 +1,7 @@
 [project]
 name = "possession-lab"
 version = "0.1.0"
-description = "Independent MLOps and agentic research scaffold for More Than A Hack 2027"
+description = "Frame-level football possession inference and research tools for More Than A Hack 2027"
 readme = "README.md"
 requires-python = ">=3.11,<3.13"
 dependencies = [
@@ -53,7 +53,7 @@ mypy_path = "src"
 exclude = ["starter", "evaluation"]
 
 [[tool.mypy.overrides]]
-module = ["starter.*"]
+module = ["games", "starter.*", "official_documentation.*", "evaluation.*", "torch", "torch.*", "lxml", "lxml.*", "kloppy", "kloppy.*", "pandas", "pandas.*"]
 follow_imports = "skip"
 ignore_missing_imports = true
 
@@ -65,6 +65,20 @@ source-roots = ["."]
 
 [tool.pylint.format]
 max-line-length = 100
+
+[tool.pylint.design]
+# Vectorized feature builders keep intermediate arrays named for reviewability.
+max-args = 8
+max-positional-arguments = 8
+max-locals = 45
+max-attributes = 20
+max-statements = 60
+min-public-methods = 1
+
+[tool.pylint.typecheck]
+# Optional research dependencies live in the isolated neural environment, not base CI.
+ignored-modules = ["torch", "torch.nn", "torch.utils.data", "lxml", "lxml.etree"]
+generated-members = ["numpy.*", "numpy.ndarray.*"]
 
 [tool.pylint.messages_control]
 disable = ["duplicate-code"]

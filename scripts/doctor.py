@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 REQUIRED = (
     "games.py",
-    "starter/baseline.py",
+    "official_documentation/starter/baseline.py",
     "evaluation/run_evaluation.py",
     "evaluation/validate_submission.py",
     "data/tactical/BAR-ATH_tactical_atd.xml",

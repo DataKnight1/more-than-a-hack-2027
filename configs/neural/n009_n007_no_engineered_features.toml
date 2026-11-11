@@ -1,0 +1,51 @@
+# N009 — N007 with feature version 1 (no engineered features): ablation. N007 = N006 + EDA data engineering: low-detection frames (<4 tracked objects) masked from the loss, and Metrica sample
+# data added (game 1 train, game 2 val, game 3 test; D-010). Otherwise as N006, same data and frozen splits, trained on IDSSE/DFL (CC BY 4.0) + SkillCorner open data (MIT).
+# SkillCorner split frozen 2026-11-06 before any model saw it: sorted match ids, index%4==3 -> test,
+# index%8==1 -> val, rest train. IDSSE split identical to N001. External data only.
+
+[experiment]
+name = "n009_n007_no_engineered_features"
+seed = 20261106
+hypothesis = """Ablation: N007 without the EDA-driven feature version 2 (raw v1 tokens), same data, masking
+and seed. Attributes N007-vs-N003 differences to the features or to the data (Metrica + masking)."""
+
+[data]
+canonical_dir = "data/external/canonical"
+train = ["idsse_J03WMX", "idsse_J03WOH", "idsse_J03WOY", "idsse_J03WPY",
+         "skillcorner_1874553", "skillcorner_1899585", "skillcorner_1927964", "skillcorner_1953632",
+         "skillcorner_1959846", "skillcorner_1996435", "skillcorner_2006229", "skillcorner_2007448",
+         "skillcorner_2007721", "skillcorner_2010085", "skillcorner_2013725", "skillcorner_2016236", "metrica_1"]
+val = ["idsse_J03WQQ", "skillcorner_1886347", "skillcorner_1996436", "skillcorner_2015213", "metrica_2"]
+test = ["idsse_J03WN1", "idsse_J03WR9",
+        "skillcorner_1925299", "skillcorner_1986691", "skillcorner_2006363", "skillcorner_2011166",
+        "skillcorner_2017461", "metrica_3"]
+degrade_eval_seed = 7
+
+[model]
+d_model = 192
+spatial_layers = 3
+temporal_layers = 6
+heads = 6
+ff_mult = 4
+dropout = 0.1
+
+[train]
+window = 384
+batch_size = 8
+accum = 2
+max_players = 30
+steps = 16000
+lr = 4e-4
+weight_decay = 0.05
+warmup = 300
+grad_clip = 1.0
+clean_prob = 0.25
+num_workers = 3
+feature_version = 1
+min_players_label = 4
+eval_every = 2000
+eval_stride = 192
+
+[decode]
+team_switch = 8.0
+dead_switch = 4.0

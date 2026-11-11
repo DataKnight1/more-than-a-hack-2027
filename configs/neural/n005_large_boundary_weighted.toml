@@ -1,0 +1,50 @@
+# N005 — N003 with transition-weighted loss (x3 within +-12 frames of a label change); otherwise identical to N003, same data and frozen splits, trained on IDSSE/DFL (CC BY 4.0) + SkillCorner open data (MIT).
+# SkillCorner split frozen 2026-11-06 before any model saw it: sorted match ids, index%4==3 -> test,
+# index%8==1 -> val, rest train. IDSSE split identical to N001. External data only.
+
+[experiment]
+name = "n005_large_boundary_weighted"
+seed = 20261106
+hypothesis = """Up-weighting frames near label changes sharpens boundary evidence, reduces
+under-segmentation and improves external spellF1 over N003 (same data, splits, seed, steps)."""
+
+[data]
+canonical_dir = "data/external/canonical"
+train = ["idsse_J03WMX", "idsse_J03WOH", "idsse_J03WOY", "idsse_J03WPY",
+         "skillcorner_1874553", "skillcorner_1899585", "skillcorner_1927964", "skillcorner_1953632",
+         "skillcorner_1959846", "skillcorner_1996435", "skillcorner_2006229", "skillcorner_2007448",
+         "skillcorner_2007721", "skillcorner_2010085", "skillcorner_2013725", "skillcorner_2016236"]
+val = ["idsse_J03WQQ", "skillcorner_1886347", "skillcorner_1996436", "skillcorner_2015213"]
+test = ["idsse_J03WN1", "idsse_J03WR9",
+        "skillcorner_1925299", "skillcorner_1986691", "skillcorner_2006363", "skillcorner_2011166",
+        "skillcorner_2017461"]
+degrade_eval_seed = 7
+
+[model]
+d_model = 192
+spatial_layers = 3
+temporal_layers = 6
+heads = 6
+ff_mult = 4
+dropout = 0.1
+
+[train]
+window = 384
+batch_size = 8
+accum = 2
+boundary_weight = 3.0
+boundary_radius = 12
+max_players = 30
+steps = 16000
+lr = 4e-4
+weight_decay = 0.05
+warmup = 300
+grad_clip = 1.0
+clean_prob = 0.25
+num_workers = 3
+eval_every = 2000
+eval_stride = 192
+
+[decode]
+team_switch = 8.0
+dead_switch = 4.0

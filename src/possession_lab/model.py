@@ -51,7 +51,7 @@ def predict(config: ModelConfig) -> NDArray[np.str_]:
     Raises:
         ValueError: If the returned prediction violates contract invariants.
     """
-    from starter.baseline import build, smooth  # pylint: disable=import-outside-toplevel
+    from official_documentation.starter.baseline import build, smooth  # pylint: disable=import-outside-toplevel
 
     codes = build()
     labels: NDArray[np.str_] = smooth(codes, config.smoothing_half_window)

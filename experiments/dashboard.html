@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Recorded external evaluation scores for possession model experiments.">
+  <title>Possession experiments</title>
+  <style>
+    :root { color-scheme: light; --ink:#18221f; --muted:#65716c; --line:#dce4df; --green:#26745b; --pale:#e7f2ec; --amber:#a46418; --dark:#243d34; --blue:#4c6e9c; }
+    * { box-sizing:border-box }
+    body { margin:0; background:#f6f8f6; color:var(--ink); font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif }
+    main { width:min(1040px,calc(100% - 32px)); margin:48px auto }
+    h1 { margin:0; font-size:clamp(2rem,5vw,3rem); letter-spacing:-.04em }
+    h2 { margin:36px 0 12px; font-size:1.1rem }
+    p { color:var(--muted) }
+    .eyebrow { color:var(--green); font-weight:700; text-transform:uppercase; letter-spacing:.12em; font-size:.75rem }
+    .card { background:white; border:1px solid var(--line); border-radius:14px; padding:22px; margin-top:20px; overflow-x:auto }
+    .champion { display:flex; align-items:center; justify-content:space-between; gap:20px }
+    .score { font-size:2.5rem; font-weight:750; letter-spacing:-.05em; white-space:nowrap }
+    .score small { display:block; color:var(--muted); font-size:.8rem; font-weight:500; letter-spacing:0 }
+    .chart { display:grid; gap:13px; margin-top:20px }
+    .row { display:grid; grid-template-columns:80px 1fr 90px; align-items:center; gap:12px }
+    .name { font-weight:650 }
+    .bars { display:grid; gap:4px }
+    .bar { height:13px; min-width:2px; border-radius:3px; background:var(--green) }
+    .bar.degraded { background:#9bb9aa }
+    .values { color:var(--muted); text-align:right; font-variant-numeric:tabular-nums; font-size:.85rem }
+    .legend { color:var(--muted); font-size:.8rem }
+    .legend i { display:inline-block; width:10px; height:10px; border-radius:2px; margin:0 5px 0 12px; background:var(--green) }
+    .legend i:first-child { margin-left:0 }
+    .legend i.degraded { background:#9bb9aa }
+    table { width:100%; border-collapse:collapse; font-size:.9rem }
+    th,td { padding:10px 8px; border-bottom:1px solid var(--line); text-align:left }
+    th { color:var(--muted); font-size:.75rem; text-transform:uppercase; letter-spacing:.06em }
+    td.num { text-align:right; font-variant-numeric:tabular-nums }
+    .status { color:var(--green); font-weight:650 }
+    .rejected { color:var(--amber) }
+    .note { font-size:.82rem }
+    .metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:18px }
+    .metric { border:1px solid var(--line); border-radius:10px; padding:14px }
+    .metric strong { display:block; font-size:1.5rem; letter-spacing:-.04em }
+    .metric span { color:var(--muted); font-size:.78rem }
+    .linechart { width:100%; height:auto; display:block; margin-top:12px }
+    .linechart text { fill:var(--muted); font:12px system-ui,sans-serif }
+    .linechart .grid { stroke:var(--line); stroke-width:1 }
+    .linechart .mean { fill:none; stroke:#33443c; stroke-width:3 }
+    .linechart .cleanline { fill:none; stroke:#26745b; stroke-width:2.5 }
+    .linechart .degradedline { fill:none; stroke:#9bb9aa; stroke-width:2.5; stroke-dasharray:5 4 }
+    .linechart .dot { fill:var(--green) }
+    .matrix { border-collapse:separate; border-spacing:5px; max-width:480px; margin-top:12px }
+    .matrix th,.matrix td { text-align:center; padding:12px; border:0 }
+    .matrix td { background:var(--pale); border-radius:6px; font-weight:700 }
+    .matrix .missing { background:#f1f3f1; color:var(--muted); font-weight:500 }
+    .models { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px }
+    .model { border-left:3px solid var(--green); padding:4px 12px }
+    .model strong { display:block }
+    .model span { color:var(--muted); font-size:.82rem }
+    a { color:#175e4a; text-underline-offset:3px }
+    nav { display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:22px; font-size:.85rem; font-weight:650 }
+    h3 { margin:22px 0 8px; font-size:1rem }
+    .lead { max-width:78ch }
+    .two-col { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px }
+    .insight { background:#f5f8f6; border-left:3px solid var(--green); border-radius:4px; padding:14px 16px }
+    .insight p { margin:5px 0 0 }
+    .flow { display:flex; flex-wrap:wrap; align-items:stretch; gap:10px; margin:20px 0 }
+    .step { flex:1 1 150px; border:1px solid var(--line); border-radius:10px; padding:14px; background:#f8fbf9 }
+    .step b, .step span { display:block }
+    .step span { color:var(--muted); font-size:.82rem; margin-top:5px }
+    .feature-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px }
+    .feature { border:1px solid var(--line); border-radius:10px; padding:14px }
+    .feature p { margin:6px 0 0; font-size:.88rem }
+    .table-wrap { overflow-x:auto }
+    .callout { background:#fff8ed; border-left:3px solid #c1832e; padding:12px 16px; margin:18px 0; color:#5b482d }
+    .callout p { color:inherit; margin:5px 0 }
+    .source { font-size:.83rem }
+    footer { margin:28px 0; color:var(--muted); font-size:.8rem }
+    @media(max-width:620px) { main { margin:28px auto } .card { padding:16px } .row { grid-template-columns:54px 1fr 80px; gap:8px } .champion { align-items:flex-start; flex-direction:column; gap:4px } table { font-size:.8rem } th,td { padding:8px 4px } .metrics { grid-template-columns:repeat(2,1fr) } .models, .two-col, .feature-grid { grid-template-columns:1fr } .flow { flex-direction:column } }
+  </style>
+</head>
+<body>
+<main>
+  <div class="eyebrow">Research log · external data</div>
+  <h1>Possession experiments</h1>
+  <p class="lead">A research account of how tracking data becomes possession spells, what the external experiments show, and where the model still fails. Results are recorded development evidence, not a private full-match score.</p>
+  <nav aria-label="Dashboard sections"><a href="#approach">Approach</a><a href="#features">Features</a><a href="#scores-title">Results</a><a href="#diagnostics">Error analysis</a><a href="#decisions-title">Decisions</a><a href="#correctness-title">Public check</a></nav>
+
+  <section class="card champion" aria-label="Current neural champion">
+    <div><div class="eyebrow">Current neural champion · N013</div><strong>Set-temporal transformer with possession-change head · seed 2</strong><p>Chosen on external validation; held as champion after later candidates did not meet adoption criteria.</p></div>
+    <div class="score">0.655<small>audit mean</small></div>
+  </section>
+
+  <section class="card" id="approach" aria-labelledby="approach-title">
+    <div class="eyebrow">01 · Problem and method</div>
+    <h2 id="approach-title">From tracking observations to possession spells</h2>
+    <p>For each frame, predict home possession (H), away possession (A), or dead ball (D). A useful answer must identify both the team and the boundaries of each possession. A frame can be correct while a short turnover is absorbed into a longer spell.</p>
+    <div class="flow" aria-label="Model pipeline">
+      <div class="step"><b>1 · Inputs</b><span>Ball and player positions, team membership and visibility at 25 Hz.</span></div>
+      <div class="step"><b>2 · Spatial attention</b><span>Ball, up to 30 player tokens and team context form an unordered set per frame.</span></div>
+      <div class="step"><b>3 · Temporal attention</b><span>A bidirectional transformer relates frames in a 384-frame window, about 15.4 seconds.</span></div>
+      <div class="step"><b>4 · Two outputs</b><span>H/A/D scores and a probability of a direct team possession change.</span></div>
+      <div class="step"><b>5 · Decode</b><span>A transition-aware Viterbi decoder combines the outputs into a consistent label sequence.</span></div>
+    </div>
+    <div class="two-col">
+      <div class="insight"><strong>Why this network?</strong><p>Attention can combine variable numbers of tracked players without relying on fixed player IDs, then use movement before and after a frame to infer context. N013 uses width 192, three spatial layers, six temporal layers and six attention heads.</p></div>
+      <div class="insight"><strong>What is the tradeoff?</strong><p>Bidirectional attention and some touch features use future frames, so this implementation is for offline inference. Smoothing reduces spurious changes but can merge short real possessions.</p></div>
+    </div>
+    <p class="source">Implementation: <a href="../src/possession_lab/neural/model.py">network</a> · <a href="../configs/neural/n013_n012_seed2.toml">N013 configuration</a> · <a href="research/neural/DECODER_DIAGNOSTIC_N013.md">decoder diagnostic</a></p>
+  </section>
+
+  <section class="card" id="features" aria-labelledby="features-title">
+    <div class="eyebrow">02 · Inputs and hypotheses</div>
+    <h2 id="features-title">What the network sees</h2>
+    <p>These features encode football hypotheses; their presence does not prove that each one independently improves the model. All are computed from tracking positions and visibility, not player identities.</p>
+    <div class="feature-grid">
+      <div class="feature"><strong>Ball position, movement and visibility</strong><p>Position and velocity locate play; a visibility flag, last-known position and observation age signal when ball evidence is missing or stale.</p></div>
+      <div class="feature"><strong>Player motion and proximity</strong><p>Team, position, velocity, distance and movement toward the ball help identify nearby players and distinguish teams competing for control.</p></div>
+      <div class="feature"><strong>Team shape and tempo</strong><p>Width, length, forward movement, speeds and numbers close to the ball describe collective behavior. Slowing can provide evidence for a stoppage.</p></div>
+      <div class="feature"><strong>Pressure, marking and touch cues</strong><p>Nearest-opponent distance, marking and ball acceleration/turning aim to reveal contested changes. Touches are inferred candidates, not confirmed events.</p></div>
+      <div class="feature"><strong>Transition supervision</strong><p>An auxiliary head learns direct H↔A changes from external labels within a ±2-frame radius. Its output changes the decoder's team-switch cost.</p></div>
+      <div class="feature"><strong>Missing tracking</strong><p>Presence masks indicate absent players; training excludes labels on frames with fewer than four tracked objects to reduce a broadcast-data artifact. Degraded examples also expose the model to missingness.</p></div>
+    </div>
+    <p class="source">Sources: <a href="../src/possession_lab/neural/features.py">feature pipeline</a> · <a href="../src/possession_lab/neural/individual_features.py">individual cues</a> · <a href="research/neural/EDA_INDIVIDUAL.md">external-data analysis</a> · <a href="research/registry.md">experiment registry</a>.</p>
+  </section>
+
+  <section class="card" aria-labelledby="metrics-title">
+    <div class="eyebrow">03 · Reading the evidence</div>
+    <h2 id="metrics-title">Two metrics answer different questions</h2>
+    <div class="two-col">
+      <div class="insight"><strong>SpellF1 · possession segments</strong><p>Predicted and true possessions are matched one-to-one by temporal overlap; F1 is averaged across overlap thresholds 0.3–0.7. Missing or merging a short spell matters even when many individual frames are correct.</p></div>
+      <div class="insight"><strong>Macro-F1 · frame labels</strong><p>F1 is computed for each class and averaged, giving home, away and dead equal weight. It describes frame classification, so it does not by itself establish accurate possession boundaries.</p></div>
+    </div>
+    <p class="note">The official metric implementation is authoritative. Clean and simulated degraded conditions use the same external audit matches; the five-match validation diagnostics later on this page are a different set.</p>
+  </section>
+
+  <section class="card" aria-labelledby="scores-title">
+    <h2 id="scores-title">Audit scores</h2>
+    <div class="legend"><i></i>Clean <i class="degraded"></i>Degraded</div>
+    <div class="chart" role="img" aria-label="Clean and degraded spellF1 scores by experiment. Bars are scaled from zero to one.">
+      <div class="row"><span class="name">N008</span><div class="bars"><div class="bar" style="width:64%"></div><div class="bar degraded" style="width:57.1%"></div></div><span class="values">.640 / .571</span></div>
+      <div class="row"><span class="name">N010</span><div class="bars"><div class="bar" style="width:70.5%"></div><div class="bar degraded" style="width:56.9%"></div></div><span class="values">.705 / .569</span></div>
+      <div class="row"><span class="name">N011</span><div class="bars"><div class="bar" style="width:69.7%"></div><div class="bar degraded" style="width:57.2%"></div></div><span class="values">.697 / .572</span></div>
+      <div class="row"><span class="name">N012</span><div class="bars"><div class="bar" style="width:71.5%"></div><div class="bar degraded" style="width:59.3%"></div></div><span class="values">.715 / .593</span></div>
+      <div class="row"><span class="name">N013</span><div class="bars"><div class="bar" style="width:73.3%"></div><div class="bar degraded" style="width:57.8%"></div></div><span class="values">.733 / .578</span></div>
+      <div class="row"><span class="name">N014</span><div class="bars"><div class="bar" style="width:61%"></div><div class="bar degraded" style="width:47.7%"></div></div><span class="values">.610 / .477</span></div>
+      <div class="row"><span class="name">N015</span><div class="bars"><div class="bar" style="width:73.2%"></div><div class="bar degraded" style="width:57.7%"></div></div><span class="values">.732 / .577</span></div>
+      <div class="row"><span class="name">N016</span><div class="bars"><div class="bar" style="width:73.4%"></div><div class="bar degraded" style="width:59.3%"></div></div><span class="values">.734 / .593</span></div>
+      <div class="row"><span class="name">N017</span><div class="bars"><div class="bar" style="width:69.2%"></div><div class="bar degraded" style="width:55.7%"></div></div><span class="values">.692 / .557</span></div>
+      <div class="row"><span class="name">E001</span><div class="bars"><div class="bar" style="width:72.8%"></div><div class="bar degraded" style="width:58.9%"></div></div><span class="values">.728 / .589</span></div>
+      <div class="row"><span class="name">N018</span><div class="bars"><div class="bar" style="width:76.7%"></div><div class="bar degraded" style="width:61.7%"></div></div><span class="values">.767 / .617</span></div>
+    </div>
+    <div class="two-col"><div class="insight"><strong>Improvement with a cost</strong><p>N010's individual and touch features raised mean spellF1 from .605 for N008 to .637 (+.032), mostly through the clean condition; degraded was .571 → .569. These are run-level comparisons, not attribution of each feature.</p></div><div class="insight"><strong>Robustness remains the issue</strong><p>N013 scores .733 clean and .578 degraded, a gap of .155. Its reported .655 mean is based on the unrounded condition scores; it is not a probability or an independent estimate for the challenge match.</p></div></div>
+    <p class="note">Values show clean / degraded spellF1 on the three-match development audit. The audit contributed to development decisions and is not an independent final test.</p>
+  </section>
+
+  <section class="card" aria-labelledby="line-title">
+    <h2 id="line-title">Experiment score line</h2>
+    <p>SpellF1 across clean and degraded audit conditions, plotted in run order. These are separate hypotheses, not training learning curves.</p>
+    <div class="legend"><i></i>Clean <i class="degraded"></i>Degraded <i style="background:#33443c"></i>Mean</div>
+    <svg class="linechart" viewBox="0 0 820 250" role="img" aria-label="Clean, degraded and mean audit spellF1 by experiment from N008 through N018.">
+      <line class="grid" x1="54" y1="30" x2="800" y2="30"/><line class="grid" x1="54" y1="73.5" x2="800" y2="73.5"/><line class="grid" x1="54" y1="117" x2="800" y2="117"/><line class="grid" x1="54" y1="160.5" x2="800" y2="160.5"/><line class="grid" x1="54" y1="204" x2="800" y2="204"/>
+      <text x="10" y="34">.80</text><text x="10" y="77">.70</text><text x="10" y="121">.60</text><text x="10" y="164">.50</text><text x="10" y="208">.40</text>
+      <polyline class="cleanline" points="70,99.6 140,71.3 210,74.8 280,67.0 350,59.1 420,112.7 490,59.6 560,58.7 630,77.0 700,61.3 770,44.2"/>
+      <polyline class="degradedline" points="70,129.6 140,130.5 210,129.2 280,120.0 350,126.6 420,170.5 490,127.0 560,120.0 630,135.7 700,121.8 770,109.8"/>
+      <polyline class="mean" points="70,114.6 140,100.9 210,102.0 280,93.5 350,92.9 420,141.6 490,93.3 560,89.4 630,106.3 700,91.6 770,77.0"/>
+      <text x="57" y="230">N008</text> <text x="127" y="230">N010</text> <text x="197" y="230">N011</text> <text x="267" y="230">N012</text> <text x="337" y="230">N013</text> <text x="407" y="230">N014</text> <text x="477" y="230">N015</text> <text x="547" y="230">N016</text> <text x="617" y="230">N017</text> <text x="687" y="230">E001</text> <text x="757" y="230">N018</text>
+    </svg>
+    <p class="note">Recorded mean spellF1: .605, .637, .635, .654, .655, .543, .654, .663, .624, .658, .692. N018 meets the first-seed numerical criteria; second-seed confirmation remains outstanding. N016 did not meet its validation gate.</p>
+  </section>
+
+  <section class="card" aria-labelledby="n018-title">
+    <div class="eyebrow">Latest evaluated run · N018</div>
+    <h2 id="n018-title">A larger model improves the recorded external audit</h2>
+    <p>N018 increases the N013 architecture to width 256, four spatial and eight temporal layers, and eight heads. It also trains for up to 24,000 steps with a changed learning rate. The best checkpoint was selected at step 22,000 using external validation; its decoder was selected on external validation before the audit.</p>
+    <div class="metrics">
+      <div class="metric"><strong>.767</strong><span>SpellF1 · clean audit</span></div>
+      <div class="metric"><strong>.617</strong><span>SpellF1 · degraded audit</span></div>
+      <div class="metric"><strong>.931</strong><span>Frame macro-F1 · clean</span></div>
+      <div class="metric"><strong>.889</strong><span>Frame macro-F1 · degraded</span></div>
+    </div>
+    <div class="two-col"><div class="insight"><strong>Compared with N013</strong><p>Mean audit spellF1 rises from .655 to .692 (+.037); clean rises .733 → .767 and degraded .578 → .617. Validation spellF1 is .5568 versus .5473. These are development comparisons on a small external audit, not estimates of private match performance.</p></div><div class="insight"><strong>Decision and open question</strong><p>The first seed meets all D-024 numerical gates, including the alive/dead condition; a second seed is required before adoption. Capacity, training duration and learning rate changed together, so the gain cannot be assigned to one factor.</p></div></div>
+    <p>The clean/degraded gap is still .151 spellF1. N018 improves both conditions in this audit, but it remains less reliable under simulated tracking degradation. The evaluation reused the recorded validation-selected decoder (team 2, dead 4, gain 1).</p>
+    <p class="source">Evidence: <a href="research/neural/STATUS.md">campaign log</a> · <a href="research/decisions.md">pre-registered decision D-024</a> · <a href="../configs/neural/n018_large_long.toml">configuration</a>.</p>
+  </section>
+
+  <section class="card" aria-labelledby="f1-title">
+    <h2 id="f1-title">F1 detail · N013</h2>
+    <div class="metrics">
+      <div class="metric"><strong>.733</strong><span>SpellF1 · clean audit</span></div>
+      <div class="metric"><strong>.578</strong><span>SpellF1 · degraded audit</span></div>
+      <div class="metric"><strong>.930</strong><span>Frame macro-F1 · clean</span></div>
+      <div class="metric"><strong>.882</strong><span>Frame macro-F1 · degraded</span></div>
+    </div>
+    <h2>Confusion matrix</h2>
+    <p>Counts pooled across N013’s five external validation matches, using its validation-selected decoder. Rows are actual labels; columns are predictions. X is included because the scorer treats abstentions as misses on graded frames.</p>
+    <h3>Clean tracking</h3>
+    <table class="matrix" aria-label="Clean external validation confusion matrix for N013; actual rows and predicted columns">
+      <thead><tr><th>Actual ↓ / Predicted →</th><th>Home</th><th>Away</th><th>Dead</th><th>X</th></tr></thead>
+      <tbody><tr><th>Home</th><td>169,002</td><td>19,630</td><td>13,870</td><td>0</td></tr><tr><th>Away</th><td>19,205</td><td>169,155</td><td>10,392</td><td>0</td></tr><tr><th>Dead</th><td>5,880</td><td>7,362</td><td>317,008</td><td>0</td></tr></tbody>
+    </table>
+    <h3>Simulated degraded tracking</h3>
+    <table class="matrix" aria-label="Degraded external validation confusion matrix for N013; actual rows and predicted columns">
+      <thead><tr><th>Actual ↓ / Predicted →</th><th>Home</th><th>Away</th><th>Dead</th><th>X</th></tr></thead>
+      <tbody><tr><th>Home</th><td>164,962</td><td>22,332</td><td>15,208</td><td>0</td></tr><tr><th>Away</th><td>22,187</td><td>164,499</td><td>12,066</td><td>0</td></tr><tr><th>Dead</th><td>7,622</td><td>9,938</td><td>312,690</td><td>0</td></tr></tbody>
+    </table>
+    <p>In clean validation, 19,630 home frames were predicted away and 19,205 away frames were predicted home. Under degradation those counts rise to 22,332 and 22,187. Dead frames predicted as a team rise from 13,242 to 17,560. These are pooled frame counts, not possession counts.</p>
+    <p class="note">These are external validation counts, not the three-match development audit or the public challenge window. Saved validation diagnostic macro-F1 is .881 clean / .861 degraded and dead-class F1 .942 / .930; those diagnostics average across matches, while these matrices pool frames.</p>
+  </section>
+
+  <section class="card" id="diagnostics" aria-labelledby="diagnostics-title">
+    <div class="eyebrow">04 · Failure analysis</div>
+    <h2 id="diagnostics-title">Where the model loses possessions</h2>
+    <p>On five external validation matches, compare the raw frame-wise choice with the selected decoder. These are match-averaged diagnostics; the error-analysis spell counts below are pooled.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Diagnostic</th><th>Clean raw → decoded</th><th>Degraded raw → decoded</th><th>Interpretation</th></tr></thead>
+      <tbody>
+        <tr><td>SpellF1</td><td>.489 → .578</td><td>.229 → .517</td><td>Decoding makes fragmented predictions more coherent.</td></tr>
+        <tr><td>False transitions / minute</td><td>6.24 → 3.04</td><td>21.73 → 3.67</td><td>The largest reduction is under degraded tracking.</td></tr>
+        <tr><td>Recall of spells under 2 s (IoU .5)</td><td>.143 → .118</td><td>.090 → .059</td><td>Smoothing also suppresses some real short possessions.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="callout"><strong>The evidence bottleneck</strong><p>In clean validation, 56% of 437 true possessions shorter than two seconds had no frame where the raw model's top class was the correct team. The decoder cannot reliably recover a change for which the network supplies little evidence.</p></div>
+    <p>In clean validation, 1,165 spells were predicted against 1,776 true spells; median predicted duration was 8.3 seconds versus 5.0 seconds in the labels. Among true spells, 20.4% were merged into longer predictions. These results point to under-segmentation and missed contested turnovers, though they do not establish how the challenge match will behave.</p>
+    <h3>What to investigate next</h3>
+    <div class="feature-grid">
+      <div class="feature"><strong>Short turnovers</strong><p>Study ball visibility, player proximity and uncertainty around externally labelled short spells. Improve the evidence for a change before changing decoder penalties.</p></div>
+      <div class="feature"><strong>Robustness and transfer</strong><p>Compare missing-ball and provider-specific failures on held-out external games. N013's recorded SkillCorner test spellF1 is .452; label definitions and conditions differ across providers.</p></div>
+      <div class="feature"><strong>Separate model contributions</strong><p>Use single-change ablations and additional seeds to distinguish real gains from variance. Pitch control's audit improvement did not clear the validation gate.</p></div>
+      <div class="feature"><strong>Boundary precision</strong><p>Evaluate transition precision and recall alongside spell duration. The external validation sensitivity study shows that systematic timing shifts can materially reduce spellF1.</p></div>
+    </div>
+    <p class="source">Sources: <a href="research/neural/DECODER_DIAGNOSTIC_N013.md">decoder diagnostic</a> · <a href="research/neural/ERROR_ANALYSIS_N013.md">error analysis</a> · <a href="research/neural/STATUS.md">campaign log</a>.</p>
+  </section>
+
+  <section class="card" aria-labelledby="correctness-title">
+    <div class="eyebrow">Separate pipeline check · public 5-minute sample</div>
+    <h2 id="correctness-title">N013 correctness checkpoint</h2>
+    <p>The official evaluator validated the N013 output file (199,319 rows) and completed a single-file check against the public sample.</p>
+    <div class="metrics">
+      <div class="metric"><strong>.8466</strong><span>Public-window macroF1</span></div>
+      <div class="metric"><strong>.6345</strong><span>Public-window spellF1</span></div>
+      <div class="metric"><strong>PASS</strong><span>CSV validation</span></div>
+      <div class="metric"><strong>1</strong><span>Candidate checked</span></div>
+    </div>
+    <h3>Public-window frame confusion matrix</h3>
+    <p>Counts for the 7,500 graded frames only, aligned by frame index. Rows are actual labels; columns are predictions. The ground-truth X rows outside the public window are excluded.</p>
+    <table>
+      <thead><tr><th>Actual ↓ / Predicted →</th><th>Home</th><th>Away</th><th>Dead</th></tr></thead>
+      <tbody>
+        <tr><th>Home</th><td>3,071</td><td>383</td><td>0</td></tr>
+        <tr><th>Away</th><td>131</td><td>2,437</td><td>9</td></tr>
+        <tr><th>Dead</th><td>395</td><td>119</td><td>955</td></tr>
+      </tbody>
+    </table>
+    <p class="note">Correctness/alignment check only. This five-minute score is not comparable to external audit scores and was not used to rank, tune, select, or promote any model. No video review was performed. See the <a href="research/neural/STATUS.md">logged checkpoint</a>.</p>
+  </section>
+
+  <section class="card" aria-labelledby="models-title">
+    <h2 id="models-title">Model families explored</h2>
+    <div class="models">
+      <div class="model"><strong>Nearest-player + majority baseline</strong><span>C000–C001 · validated deterministic reference</span></div>
+      <div class="model"><strong>Temporal transformer</strong><span>N001–N004 · set encoder, temporal attention, scaling, provider transfer</span></div>
+      <div class="model"><strong>Feature engineered transformer</strong><span>N006–N011 · team context, low-detection masking, individual and touch cues</span></div>
+      <div class="model"><strong>Transition-aware sequence model</strong><span>N012–N013 · possession-change head and transition-aware decoding</span></div>
+      <div class="model"><strong>Graph-relational attention</strong><span>N014–N015 · pairwise player relations with pitch-control inputs</span></div>
+      <div class="model"><strong>Pitch-control features</strong><span>N016 · time-to-intercept and team control features; not adopted</span></div>
+      <div class="model"><strong>Auxiliary latent-ball head</strong><span>N014, N017 · Gaussian then bounded Huber objective; not adopted</span></div>
+      <div class="model"><strong>Probability ensemble</strong><span>E001 · averaged N012 and N013 outputs; not adopted</span></div>
+      <div class="model"><strong>Capacity / longer training</strong><span>N018 · larger model; first seed clears audit gates, confirmation pending</span></div>
+    </div>
+    <h2>Proposed, not yet scored</h2>
+    <div class="models">
+      <div class="model"><strong>HMM / HSMM</strong><span>Explicit state transitions and possession duration priors</span></div>
+      <div class="model"><strong>Change-point segmentation</strong><span>Direct boundary detection and segment-level decoding</span></div>
+      <div class="model"><strong>Gradient-boosted trees</strong><span>Supervised tabular baseline, pending eligible labels from other games</span></div>
+      <div class="model"><strong>Event-driven hierarchical model</strong><span>Jointly model restarts and possession, pending evidence/features</span></div>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="decisions-title">
+    <h2 id="decisions-title">Decision summary</h2>
+    <table>
+      <thead><tr><th>Run</th><th>Change</th><th>Mean</th><th>Decision</th></tr></thead>
+      <tbody>
+        <tr><td>N013</td><td>Transition head, seed 2</td><td class="num">.655</td><td class="status">Champion</td></tr>
+        <tr><td>N018</td><td>Larger model, longer training</td><td class="num">.692</td><td>First seed passed; confirmation pending</td></tr>
+        <tr><td>N016</td><td>Pitch control</td><td class="num">.663</td><td class="rejected">Not adopted</td></tr>
+        <tr><td>N015</td><td>Pitch control + graph attention</td><td class="num">.654</td><td class="rejected">Not adopted</td></tr>
+        <tr><td>N017</td><td>Bounded latent-ball head</td><td class="num">.624</td><td class="rejected">Not adopted</td></tr>
+        <tr><td>E001</td><td>N012 + N013 ensemble</td><td class="num">.658</td><td class="rejected">Not adopted</td></tr>
+      </tbody>
+    </table>
+    <h3>How the research progressed</h3>
+    <p><strong>N008 → N010/N011:</strong> player-level pressure, marking and inferred touches targeted missed contested possessions. N010 improved the audit mean; N011 confirmed the configuration with a second seed. <strong>N011 → N012/N013:</strong> a change head and transition-aware decoder improved the recorded audit mean from .635 to .654/.655. N013 was chosen over N012 on external validation, not because it had the best degraded score.</p>
+    <p><strong>N014–N017:</strong> pitch control, graph relations and a ball-reconstruction task tested whether stronger football structure would help. The combined N014 run deteriorated and its unbounded Gaussian auxiliary loss dominated training. Removing that head (N015) was roughly neutral; pitch control alone (N016) improved the audit mean but failed the validation gate; the bounded ball head (N017) also missed the gate.</p>
+    <p><strong>E001:</strong> averaging two champion seeds produced .658 audit mean, but did not satisfy the full pre-registered criteria. N018 is a larger, longer run: its external validation spellF1 is .5568 and its audit mean is .692. It meets the first-seed numerical gates; second-seed confirmation is still required. A higher audit number alone is insufficient when the agreed validation and confirmation criteria are not met.</p>
+    <p class="source">See the <a href="research/registry.md">registry</a> and <a href="research/decisions.md">decision log</a> for configurations, gates, and full results.</p>
+  </section>
+
+  <footer>Source: <a href="research/registry.md">research registry</a> and <a href="research/neural/STATUS.md">append-only campaign status</a>. Development evaluation used eligible external data. Challenge public ground truth was used only for the separate correctness check, never for model selection.</footer>
+</main>
+</body>
+</html>

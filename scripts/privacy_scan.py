@@ -11,7 +11,6 @@ ROOT = Path(__file__).resolve().parents[1]
 RESTRICTED_PREFIXES = (
     "docs/",
     "research/",
-    "experiments/",
     "setup/",
     "artifacts/",
     "features/",
@@ -25,6 +24,7 @@ RESTRICTED_PREFIXES = (
 RESTRICTED_EXACT = {
     "agents.md",
     "claude.md",
+    "agents_neural_addendum.md",
     "mlruns.db",
     "evaluation/scoreboard.csv",
 }
@@ -38,6 +38,12 @@ RESTRICTED_EXTENSIONS = {
     ".zip",
     ".7z",
     ".parquet",
+    ".pt",
+    ".pth",
+    ".npz",
+    ".pkl",
+    ".gzip",
+    ".pl3container",
 }
 
 # Only explicitly approved files are permitted in evaluation/results/.
@@ -83,7 +89,14 @@ def audit_tracked(paths: list[str]) -> list[str]:
             ".gitignore",
             DATA_MARKER,
         }
-        is_nested_markdown = extension == ".md" and len(path.parts) > 1
+        allowed_markdown = lowered.startswith(
+            ("official_documentation/", "experiments/", "assets/brand/")
+        )
+        is_nested_markdown = extension == ".md" and len(path.parts) > 1 and not allowed_markdown
+        is_unapproved_experiment = lowered.startswith("experiments/") and extension not in {
+            ".md",
+            ".html",
+        }
         is_data_content = lowered.startswith("data/") and normalized != DATA_MARKER
 
         if any(
@@ -95,6 +108,7 @@ def audit_tracked(paths: list[str]) -> list[str]:
                 is_hidden_directory,
                 is_unapproved_hidden_file,
                 is_nested_markdown,
+                is_unapproved_experiment,
                 is_data_content,
             )
         ):

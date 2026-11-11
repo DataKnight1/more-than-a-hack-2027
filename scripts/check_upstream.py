@@ -16,11 +16,11 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "artifacts" / "local" / "upstream_manifest.json"
 OFFICIAL_FILES = (
     "games.py",
-    "RULES.md",
-    "DATA.md",
-    "EVALUATION.md",
-    "SUBMISSION.md",
-    "starter/baseline.py",
+    "official_documentation/RULES.md",
+    "official_documentation/DATA.md",
+    "official_documentation/EVALUATION.md",
+    "official_documentation/SUBMISSION.md",
+    "official_documentation/starter/baseline.py",
     "evaluation/possession_metrics.py",
     "evaluation/run_evaluation.py",
     "evaluation/validate_submission.py",
