@@ -1,0 +1,23 @@
+# Three-state Viterbi possession decoder (src/possession_lab/hmm.py).
+# Tuned on open Bundesliga matches (scripts/open_data_check.py), never on our own match.
+[experiment]
+name = "possession-hmm"
+seed = 42
+
+[model]
+family = "possession_hmm"
+apply_ungraded_x = true
+
+[hmm]
+control_m = 1.5
+contrast_m = 1.5
+flight_mps = 8.0
+alive_share = 0.9
+slow_weight = 0.35
+out_weight = 2.0
+gap_weight = 0.2
+gap_s = 1.0
+rolling_weight = 0.8
+spread_weight = 0.006
+team_switch_s = 0.15
+dead_switch_s = 1.0

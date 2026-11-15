@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 import tomllib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+from possession_lab.hmm import HmmParams
+
+FAMILIES = frozenset({"nearest_player_majority", "possession_hmm"})
 
 
 @dataclass(frozen=True)
@@ -17,16 +21,18 @@ class ModelConfig:
         smoothing_half_window: Half-width, in 25-fps tactical frames.
         apply_ungraded_x: Whether known ungraded intervals become ``X``.
         seed: Reproducibility seed, reserved for future stochastic models.
+        hmm: Settings of the ``possession_hmm`` family, unused by the baseline.
     """
 
     family: str = "nearest_player_majority"
     smoothing_half_window: int = 50
     apply_ungraded_x: bool = False
     seed: int = 42
+    hmm: HmmParams = field(default_factory=HmmParams)
 
     def __post_init__(self) -> None:
         """Reject unsupported options rather than silently changing the baseline."""
-        if self.family != "nearest_player_majority":
+        if self.family not in FAMILIES:
             raise ValueError(f"Unsupported model family: {self.family}")
         if (
             not isinstance(self.smoothing_half_window, int)
@@ -48,7 +54,7 @@ def load_config(path: Path) -> ModelConfig:
     """Read a TOML model configuration from a local path.
 
     Args:
-        path: TOML file with `[model]` and optional `[experiment]` sections.
+        path: TOML file with `[model]` and optional `[experiment]` and `[hmm]` sections.
 
     Returns:
         Validated immutable model configuration.
@@ -73,4 +79,5 @@ def load_config(path: Path) -> ModelConfig:
         smoothing_half_window=model.get("smoothing_half_window", 50),
         apply_ungraded_x=model.get("apply_ungraded_x", False),
         seed=experiment.get("seed", 42),
+        hmm=HmmParams.from_table(raw.get("hmm", {})),
     )

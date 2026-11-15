@@ -99,6 +99,29 @@ Only use external datasets after licence and provenance review and a frozen expe
 - The local baseline reproduction matched all 199,319 supplied baseline rows and passed the official format validator without reading ground truth.
 - The public N013 scorer check is a correctness checkpoint only; it is not model-selection evidence.
 
+## HMM baseline and fair comparison
+
+`possession_hmm` is a simpler second model and the fallback. It labels H/A/D with a Viterbi pass
+over per-frame evidence: ball-to-player distances, ball out of play or lost, player speed and team
+spread. Settings are in `configs/models/possession_hmm.toml`.
+
+```powershell
+uv run --no-sync python -m possession_lab.cli predict --config configs/models/possession_hmm.toml --output evaluation/results/team_hmm.csv
+uv run --no-sync python scripts/data_profile.py
+```
+
+`data_profile.py` prints aggregate statistics of the local match data only, never frames or raw
+lines. `scripts/open_data_check.py` scores the HMM on the seven open DFL matches, degraded to the
+ball-gap pattern of our tracking (the ball is lost in long gaps, mostly during stoppages). There it
+reaches spellF1 0.44 against 0.26 for smooth50.
+
+`scripts/fair_compare.py` runs the HMM, a neural checkpoint and smooth50 on the same frames of
+J03WN1 and J03WR9, the two DFL matches that no model trained or validated on:
+
+```powershell
+python scripts/fair_compare.py --ckpt artifacts/neural/runs/n013_n012_seed2/best.pt --decoder 2 8 4 --seeds 0 1 2
+```
+
 ## Documentation
 
 - [Original challenge documentation and starter material](official_documentation/README.md)
