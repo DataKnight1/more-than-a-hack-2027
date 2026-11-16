@@ -2,6 +2,26 @@
 
 Recorded experiment scores and decisions are summarized in the [experiment dashboard](dashboard.html).
 
+## Selected model and evidence
+
+[N018](../models/n018/README.md) is the recorded champion: a set-temporal
+transformer with a possession-change head and a transition-aware decoder. Its
+three-match external development audit produced **0.7673 clean** and **0.6166
+degraded** spellF1, averaging **0.6919**. These are development results, not
+the private competition score; the audit has been reused and the model was
+selected with one seed. The [promotion decision](research/decisions.md) and
+[registry](research/registry.md) preserve the evidence and earlier results.
+
+```mermaid
+flowchart LR
+  H[Hypothesis and frozen split] --> C[Versioned configuration]
+  C --> T[External-data training]
+  T --> V[External validation and decoder selection]
+  V --> A[External development audit]
+  A --> D[Recorded decision]
+  D --> I[Frozen local inference]
+```
+
 The latest organizer clarification controls all experiments. Training, fitting, calibration, tuning and selection use eligible external data only. Supplied inputs support fixed local inference and automatic checks only; never compare output with the supplied video, make manual fixture data, or upload supplied data to AI services. See the [research program](research/program.md) for current campaign status and preparation gates.
 
 **Goal:** develop eligible algorithms likely to generalise to high private full-match `spellF1` without tuning on the provided five-minute GT. Read the [program](research/program.md), [official scoring rules](../official_documentation/EVALUATION.md) and [model backlog](MODEL_PORTFOLIO.md).

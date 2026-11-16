@@ -1,24 +1,70 @@
-# More than a Hack 2027 · Possession Lab
+<p align="center">
+  <img src="assets/brand/research-banner.svg" alt="Blue and garnet football pitch with data nodes, for the Visca possession research project" width="100%">
+</p>
 
-Research code for frame-level football possession inference in the More than a Hack 2027 challenge. The project develops and compares models using eligible external tracking data, then packages a deterministic `frame,label` prediction pipeline for local use.
+# Visca · Football Possession Lab
+
+**More than a Hack 2027** | From tracking data to possession spells
+
+> Independent competition entry. This project is not an official FC Barcelona, Metrica Sports, or Mobile World Capital Barcelona publication.
+
+[The model](#meet-n018) · [Results](#what-the-results-mean) · [Reproduce](#getting-started) · [Research](experiments/README.md) · [Team](#contributors)
+
+Research code for frame-level football possession inference in the More than a Hack 2027 challenge. The project develops and compares models using eligible external tracking data, then packages a reproducible `frame,label` prediction pipeline for local use.
 
 > **Competition boundary:** never train, tune, calibrate, rank, or select a model with the supplied match or its public five-minute labels. Never compare model output with the supplied video. Keep the licensed match assets, private reports, unreviewed checkpoints, and generated full-match predictions out of Git.
 
-## Current approach
+<details>
+<summary><strong>See an illustrative possession sequence in motion</strong></summary>
 
-N013 is a set-temporal transformer with individual-player features and an auxiliary possession-change head. A transition-aware Viterbi decoder turns frame probabilities into smoother `H` (home), `A` (away), and `D` (dead-ball) sequences. `X` is reserved for abstentions in the submission contract. Later campaign records also report a decision to promote N018; the final submission model and its complete release package still need to be frozen.
+![Animated schematic of a ball moving between blue and garnet players on a football pitch. It is an illustration, not match footage or a model prediction.](assets/brand/possession-flow.gif)
+
+The animation is a synthetic illustration; it contains no challenge-match data.
+</details>
+
+## Meet N018
+
+**N018 is our selected competition model.** It reads tactical automatic tracking data and combines a permutation-invariant player set encoder with a temporal transformer. An auxiliary head estimates possession changes; a transition-aware Viterbi decoder turns the model's scores into `H` (home), `A` (away), and `D` (dead ball) sequences. `X` represents abstention or frames outside the designated halves. N013 is the previous champion and primary fallback.
+
+| N018 at a glance | Configuration |
+|---|---|
+| Architecture | Approximately 9.72 million parameters; width 256; 4 spatial and 8 temporal layers; 8 attention heads |
+| Context | 384 frames at 25 Hz, approximately 15.4 seconds, with overlapping windows |
+| Inputs | Ball, player, team-context, marking, pressure and ball-touch features derived from tracking |
+| Frozen decoder | Team switch **2.0**, dead-ball switch **4.0**, transition gain **1.0** |
+| Release files | [Checkpoint](models/n018/best.pt) · [Training configuration](configs/neural/n018_large_long.toml) · [Frozen decoder](configs/neural/n018_decoder.json) |
+
+The decoder values above are the externally selected inference values. The `[decode]` defaults in the training configuration are different and do not replace the [frozen decoder](configs/neural/n018_decoder.json).
 
 ```mermaid
 flowchart LR
-  T[External 25 Hz tracking] --> F[Team and player features]
+  T[25 Hz tracking<br/>local match input] --> F[Ball, team and player features]
   F --> S[Set encoder<br/>players as a permutation-invariant set]
   S --> TT[Temporal transformer<br/>context over a 384-frame window]
   TT --> L[H / A / D logits]
   TT --> C[Possession-change probability]
   L --> V[Transition-aware Viterbi decoder]
   C --> V
-  V --> O[Frame labels]
+  V --> O[199,319 frame labels<br/>official format validation]
+  classDef blau fill:#004D98,stroke:#004D98,color:#fff;
+  classDef grana fill:#A50044,stroke:#A50044,color:#fff;
+  class T,F,S blau;
+  class TT,L,C,V,O grana;
 ```
+
+## What the results mean
+
+**The N018 private competition score is not yet known.** The figures below are from a three-match **external development audit**, not the supplied match. The audit was reused during development and is not an independent final test. Clean and degraded are two tracking conditions; the mean averages their spellF1 scores.
+
+| External development evidence | Clean | Simulated degradation | Mean |
+|---|---:|---:|---:|
+| N018 spellF1 | 0.7673 | 0.6166 | **0.6919** |
+| N018 macroF1 | 0.9311 | 0.8890 | — |
+| N013 spellF1, prior champion | 0.7326 | 0.5781 | 0.6554 |
+
+N018 was promoted on one seed; second-seed confirmation was waived. Capacity, training duration and learning rate changed together, so the comparison does not isolate the cause of the gain. The organizer-reported `baseline_smooth50` full-match spellF1 is **0.2433**, but it was measured on a different dataset: it cannot be directly compared with these external audit scores. See decision D-026 in the [promotion record](experiments/research/decisions.md).
+
+The competition ranks the private full match by **spellF1**, with macroF1 as the tie-break. SpellF1 matches predicted and true possession intervals one-to-one across temporal overlap thresholds, rewarding coherent possessions rather than just individual correct frames. The supplied five-minute ground truth is for correctness checks only and was not used to rank or select candidates.
 
 ### Features and why they were explored
 
@@ -44,7 +90,7 @@ Scores below are from the **three-match external development audit** (IDSSE and 
 | N016 | Pitch control only | 0.734 | 0.593 | 0.663 | Not adopted; validation gate not met |
 | N017 | Bounded latent-ball Huber head | 0.692 | 0.557 | 0.624 | Not adopted |
 | E001 | Average N012 + N013 probabilities | 0.728 | 0.589 | 0.658 | Not adopted |
-| N018 | Larger/longer transformer | 0.767 | 0.617 | 0.692 | Later promoted; second-seed confirmation was waived |
+| **N018** | Larger/longer transformer | **0.767** | **0.617** | **0.692** | **Selected; second-seed confirmation waived** |
 
 The audit is development evidence and must not be presented as independent full-match performance. The public five-minute scorer result for N013 is documented separately as a single-file correctness/alignment check only; it did not rank or select models. See the [experiment dashboard](experiments/dashboard.html) and [campaign status](experiments/research/neural/STATUS.md).
 
@@ -78,11 +124,11 @@ The audit is development evidence and must not be presented as independent full-
 Use Python 3.11 and the locked environment. The scorer itself only needs the dependencies documented in the official archive.
 
 ```powershell
-uv sync --locked --group dev
-uv run ruff check src tests scripts
-uv run ruff format --check src tests scripts
-uv run mypy src/possession_lab
-uv run pylint src/possession_lab
+uv sync --locked --group dev --python 3.11.9
+uv run --no-sync ruff check src tests scripts
+uv run --no-sync ruff format --check src tests scripts
+uv run --no-sync mypy src/possession_lab
+uv run --no-sync pylint src/possession_lab
 ```
 
 For neural training, create an isolated Python 3.11 environment and install the matching PyTorch build and NumPy. For example, on a CUDA 12.8 Windows system:
@@ -116,6 +162,7 @@ On 2026-11-16, two local runs and a separate clean-checkout run with the pinned 
 
 ## Tests and quality evidence
 
+- **2026-11-16:** the synthetic suite passed 124 tests; Ruff lint and formatting, strict mypy, Pylint and the indexed-file privacy preflight passed. [GitHub Actions](https://github.com/DataKnight1/more-than-a-hack-2027/actions/runs/43921802823) passed on the release commit.
 - **2026-11-11:** 77 synthetic tests passed with the neural dependencies installed. Ruff lint and formatting passed, mypy reported no issues in 25 source files, and Pylint rated the package 10/10.
 - The local baseline reproduction matched all 199,319 supplied baseline rows and passed the official format validator without reading ground truth.
 - The public N013 scorer check is a correctness checkpoint only; it is not model-selection evidence.
@@ -136,3 +183,13 @@ repository layout rather than this project's reorganized directories.
 The challenge assets are separately licensed and are not covered by the source-code licence. Match data and ground-truth samples are not distributed in this repository. Do not commit videos, generated tracking/tagging extracts, private labels, predictions, unreviewed checkpoints, or evaluation reports. Keep these under ignored local paths and review the applicable rights before publishing any derived result.
 
 Third-party adaptations have their own terms; see [third-party notices](THIRD_PARTY_NOTICES.md), including the MPL-2.0 notice for the PathCRF adaptation. The organizer's original licence and files are preserved separately in the archive.
+
+## Contributors
+
+- Tiago Albuquerque
+- Mats Eijk
+- Gustavo Batista
+- Tomás Batista
+- Tiago Monteiro
+
+Built for [More than a Hack 2027](https://landing.mobileworldcapital.com/more-than-a-hack-2027), organized by [Metrica Sports](https://metrica-sports.com), [FC Barcelona](https://www.fcbarcelona.com) and [Mobile World Capital Barcelona](https://www.mobileworldcapital.com). The original artwork uses blue and garnet as an independent tribute, without official club marks or implied endorsement.

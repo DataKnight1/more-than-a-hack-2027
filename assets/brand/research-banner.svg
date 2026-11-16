@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 250" width="1200" height="250" role="img" aria-labelledby="title desc">
-  <title id="title">More Than A Hack 2027: Agentic Football Research</title>
-  <desc id="desc">Independent blue and garnet football-inspired data science banner, with geometric pitch lines and data nodes.</desc>
+  <title id="title">Visca: Football Possession Lab</title>
+  <desc id="desc">Independent blue and garnet football research banner with geometric pitch lines and data nodes.</desc>
   <rect width="1200" height="250" rx="18" fill="#08172A"/>
   <rect x="0" y="0" width="18" height="250" fill="#004D98"/>
   <rect x="18" y="0" width="18" height="250" fill="#A50044"/>
@@ -18,8 +18,8 @@
     <circle cx="900" cy="155" r="6"/><circle cx="974" cy="106" r="6"/><circle cx="1041" cy="163" r="6"/><circle cx="1112" cy="91" r="6"/>
   </g>
   <text x="80" y="64" fill="#EDBB00" font-family="Arial, sans-serif" font-size="19" font-weight="700" letter-spacing="3">MORE THAN A HACK 2027</text>
-  <text x="80" y="122" fill="#F6F8FC" font-family="Arial, sans-serif" font-size="40" font-weight="700">AGENTIC FOOTBALL RESEARCH</text>
-  <text x="80" y="169" fill="#C5D4E8" font-family="Arial, sans-serif" font-size="20">CRISP-DM  •  MLOps  •  Autonomous Experiments</text>
+  <text x="80" y="122" fill="#F6F8FC" font-family="Arial, sans-serif" font-size="40" font-weight="700">VISCA · POSSESSION LAB</text>
+  <text x="80" y="169" fill="#C5D4E8" font-family="Arial, sans-serif" font-size="20">TRACKING  •  TEMPORAL MODELS  •  POSSESSION</text>
   <rect x="80" y="194" width="560" height="4" rx="2" fill="#004D98"/>
   <rect x="640" y="194" width="165" height="4" rx="2" fill="#A50044"/>
   <text x="80" y="223" fill="#9DB1C9" font-family="Arial, sans-serif" font-size="12">INDEPENDENT PARTICIPANT PROJECT  •  NOT AN OFFICIAL CLUB MARK</text>
