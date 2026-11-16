@@ -99,6 +99,22 @@ Only use external datasets after licence and provenance review and a frozen expe
 - The local baseline reproduction matched all 199,319 supplied baseline rows and passed the official format validator without reading ground truth.
 - The public N013 scorer check is a correctness checkpoint only; it is not model-selection evidence.
 
+## Rebuild the submission
+
+The submitted file comes from the neural model N013. Its checkpoint and decoder settings are in
+`artifacts/neural/runs/n013_n012_seed2/`. Inference runs on the CPU and gives the same file on
+every run.
+
+```powershell
+python -m venv .venv-neural
+.venv-neural\Scripts\pip install -r requirements-neural.txt
+.venv-neural\Scripts\python scripts/neural/predict_challenge.py --run n013_n012_seed2
+```
+
+On the two DFL matches no model trained or validated on, degraded to our ball-gap pattern,
+N013 scores spellF1 0.617 against 0.435 for the HMM and 0.248 for smooth50
+(`scripts/fair_compare.py`, three seeds).
+
 ## HMM baseline and fair comparison
 
 `possession_hmm` is a simpler second model and the fallback. It labels H/A/D with a Viterbi pass
