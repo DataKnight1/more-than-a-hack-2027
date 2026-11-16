@@ -1,0 +1,7 @@
+{
+  "decoder": {
+    "team_switch": 2.0,
+    "dead_switch": 4.0,
+    "transition_gain": 1.0
+  }
+}

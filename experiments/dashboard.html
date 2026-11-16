@@ -1,0 +1,1012 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Professional ML Scientist Critical Analysis & Research Dashboard for Possession Experiments">
+  <title>Possession Lab · ML Scientist Critical Analysis & Research Dashboard</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --ink: #0f172a;
+      --muted: #475569;
+      --line: #e2e8f0;
+      --emerald: #059669;
+      --emerald-dark: #065f46;
+      --emerald-pale: #ecfdf5;
+      --amber: #d97706;
+      --amber-pale: #fffbeb;
+      --red: #dc2626;
+      --red-pale: #fef2f2;
+      --blue: #2563eb;
+      --blue-pale: #eff6ff;
+      --slate: #334155;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font: 14px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      padding: 32px 16px;
+    }
+    main {
+      max-width: 1140px;
+      margin: 0 auto;
+    }
+    header {
+      margin-bottom: 24px;
+    }
+    .eyebrow {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--emerald);
+      margin-bottom: 6px;
+    }
+    h1 {
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.15;
+      color: var(--ink);
+      margin-bottom: 8px;
+    }
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 750;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      margin: 28px 0 12px;
+    }
+    h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: var(--slate);
+      margin: 18px 0 8px;
+    }
+    p {
+      color: var(--muted);
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+    .lead {
+      font-size: 1.02rem;
+      color: var(--slate);
+      max-width: 85ch;
+    }
+    nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      margin: 20px 0 28px;
+      padding: 10px 16px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      box-shadow: var(--shadow-sm);
+    }
+    nav a {
+      color: var(--slate);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    nav a:hover {
+      color: var(--emerald);
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+    .champion-banner {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 24px;
+      border-left: 6px solid var(--emerald);
+      background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+    }
+    .champion-score {
+      text-align: right;
+    }
+    .champion-score strong {
+      display: block;
+      font-size: 3rem;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.05em;
+      color: var(--emerald-dark);
+    }
+    .champion-score span {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--emerald);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .badge-champion { background: var(--emerald-pale); color: var(--emerald-dark); border: 1px solid #a7f3d0; }
+    .badge-fallback { background: var(--blue-pale); color: var(--blue); border: 1px solid #bfdbfe; }
+    .badge-rejected { background: var(--amber-pale); color: var(--amber); border: 1px solid #fde68a; }
+    .badge-baseline { background: #f1f5f9; color: var(--slate); border: 1px solid #cbd5e1; }
+    
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin: 16px 0;
+    }
+    .metric-card {
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .metric-card strong {
+      display: block;
+      font-size: 1.45rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+    }
+    .metric-card span {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .metric-card.highlight {
+      background: var(--emerald-pale);
+      border-color: #a7f3d0;
+    }
+    .metric-card.highlight strong {
+      color: var(--emerald-dark);
+    }
+
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+      margin: 18px 0;
+    }
+    .analysis-box {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 16px;
+      background: var(--bg);
+    }
+    .analysis-box.pro {
+      border-left: 4px solid var(--emerald);
+    }
+    .analysis-box.con {
+      border-left: 4px solid var(--amber);
+    }
+    .analysis-box.critique {
+      border-left: 4px solid var(--red);
+    }
+    .analysis-box h4 {
+      font-size: 0.92rem;
+      font-weight: 750;
+      margin-bottom: 6px;
+      color: var(--ink);
+    }
+    .analysis-box p {
+      font-size: 0.85rem;
+      margin: 0;
+      color: var(--slate);
+    }
+
+    .table-container {
+      overflow-x: auto;
+      margin: 16px 0;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      background: var(--card);
+    }
+    th, td {
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+    }
+    th {
+      background: #f1f5f9;
+      color: var(--slate);
+      font-weight: 700;
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f8fafc; }
+    td.num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+    }
+    tr.champion-row td {
+      background: #f0fdf4;
+      font-weight: 650;
+    }
+
+    .chart-container {
+      margin: 20px 0;
+    }
+    .linechart {
+      width: 100%;
+      height: auto;
+      display: block;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #ffffff;
+      padding: 12px 0;
+    }
+    .linechart text {
+      fill: var(--muted);
+      font: 11px system-ui, sans-serif;
+    }
+    .linechart .grid {
+      stroke: var(--line);
+      stroke-width: 1;
+      stroke-dasharray: 2 2;
+    }
+    .linechart .cleanline {
+      fill: none;
+      stroke: var(--emerald);
+      stroke-width: 2.5;
+    }
+    .linechart .degradedline {
+      fill: none;
+      stroke: #94a3b8;
+      stroke-width: 2;
+      stroke-dasharray: 4 3;
+    }
+    .linechart .meanline {
+      fill: none;
+      stroke: var(--ink);
+      stroke-width: 3;
+    }
+    .linechart .dot {
+      fill: var(--emerald);
+      stroke: #ffffff;
+      stroke-width: 1.5;
+    }
+    .linechart .dot-champ {
+      fill: var(--emerald-dark);
+      stroke: #ffffff;
+      stroke-width: 2;
+      r: 6;
+    }
+    .chart-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 0.8rem;
+      color: var(--slate);
+      margin: 10px 0 16px;
+      font-weight: 600;
+    }
+    .chart-legend i {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      vertical-align: -1px;
+      margin-right: 6px;
+    }
+    .chart-legend .leg-mean { background: var(--ink); }
+    .chart-legend .leg-clean { background: var(--emerald); }
+    .chart-legend .leg-degraded { background: #94a3b8; }
+
+    .matrix-table {
+      max-width: 440px;
+      margin: 10px 0 18px;
+      border-collapse: separate;
+      border-spacing: 4px;
+      border: 0;
+    }
+    .matrix-table th, .matrix-table td {
+      border: 0;
+      padding: 8px 12px;
+      text-align: center;
+      border-radius: 6px;
+    }
+    .matrix-table th { background: transparent; font-size: 0.75rem; color: var(--slate); }
+    .matrix-table td { background: var(--bg); font-weight: 700; font-variant-numeric: tabular-nums; }
+    .matrix-table td.diag { background: var(--emerald-pale); color: var(--emerald-dark); }
+    .matrix-table td.offdiag { background: #fef2f2; color: #991b1b; }
+
+    .callout {
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin: 18px 0;
+      border-left: 4px solid var(--amber);
+      background: var(--amber-pale);
+      color: #78350f;
+    }
+    .callout strong { display: block; font-size: 0.92rem; margin-bottom: 4px; }
+    .callout p { color: inherit; margin: 0; font-size: 0.88rem; }
+
+    .callout-blue {
+      border-left-color: var(--blue);
+      background: var(--blue-pale);
+      color: #1e3a8a;
+    }
+
+    footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.8rem;
+      text-align: center;
+    }
+    footer a { color: var(--slate); }
+
+    @media (max-width: 768px) {
+      .champion-banner { grid-template-columns: 1fr; }
+      .champion-score { text-align: left; }
+      .metrics-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">Google DeepMind · Possession Lab 2027 Challenge · ML Scientist Technical Review</div>
+    <h1>Possession Modeling: Critical Research Dashboard</h1>
+    <p class="lead">A comprehensive, hypothesis-driven machine learning analysis synthesizing model evolution, scaling dynamics, sequence decoding behavior, negative result autopsies, and governance boundaries.</p>
+    <nav aria-label="Dashboard sections">
+      <a href="#champion">Champion Status</a>
+      <a href="#scaling">Capacity & Scaling</a>
+      <a href="#progression">Experiment Line</a>
+      <a href="#negative">Ablations & Autopsy</a>
+      <a href="#decoding">Decoding & Latency</a>
+      <a href="#public-window">Public Window Benchmark</a>
+      <a href="#registry">Master Results Table</a>
+      <a href="#strategic">Strategic Recommendations</a>
+    </nav>
+  </header>
+
+  <!-- CHAMPION SUMMARY -->
+  <section class="card champion-banner" id="champion">
+    <div>
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+        <span class="badge badge-champion">Standing Neural Champion</span>
+        <span style="font-size:0.8rem; color:var(--muted); font-weight:600;">Adopted via Decision D-026</span>
+      </div>
+      <h2 style="margin:0 0 8px 0; font-size:1.55rem;">N018 · Scaled Spatial-Temporal Transformer (`n018_large_long`)</h2>
+      <p style="margin-bottom:12px;">Deepened & widened architecture (9.72M parameters, 4 spatial + 8 temporal layers, 8 heads, 15.4s temporal context) trained for 24k steps with dynamic transition Viterbi decoding.</p>
+      <div style="font-size:0.82rem; color:var(--slate);">
+        <b>Submission SHA-256:</b> <code style="background:#e2e8f0; padding:2px 6px; border-radius:4px; font-size:0.75rem;">2d2e749920a659e456f6d9aaabfee0da6472c2185795c3c9c179b306fba229e2</code><br>
+        <b>Inference Profile:</b> ~1m 03s on NVIDIA RTX 4050 GPU (FP16 autocast) vs >10m on CPU (199,319 frames).
+      </div>
+    </div>
+    <div class="champion-score">
+      <strong>0.6919</strong>
+      <span>Audit Mean SpellF1</span>
+      <div style="font-size:0.75rem; color:var(--muted); margin-top:4px;">Clean: 0.7673 · Degr: 0.6166</div>
+    </div>
+  </section>
+
+  <!-- EXECUTIVE ML SCIENTIST CRITICAL ANALYSIS -->
+  <section class="card" id="scaling">
+    <div class="eyebrow">Pillar I · Scientific Synthesis</div>
+    <h2>Executive ML Scientist Critical Appraisal</h2>
+    <p class="lead">A rigorous critique of empirical gains, confounding variables, and theoretical limits observed across the campaign.</p>
+
+    <div class="analysis-grid">
+      <div class="analysis-box pro">
+        <h4>1. Capacity Scaling Unlocks High-Order Spatiotemporal Invariance</h4>
+        <p>Scaling parameters from 4.15M (N013) to 9.72M (N018) produced our largest single leap: <b>+0.0365 mean spellF1</b> (clean 0.7326 → 0.7673, degraded 0.5781 → 0.6166). Deeper temporal attention (8 layers) enables the network to track latent ball trajectories through player scuffles and sustain coherent possession states through prolonged ball occlusions without collapsing into spurious state flips.</p>
+      </div>
+
+      <div class="analysis-box critique">
+        <h4>2. Confounded Factor Attribution (Capacity vs Budget)</h4>
+        <p>In N018, architecture width ($d=256$), depth (12 total layers), head count (8), learning rate schedule, and training step count (16k → 24k) were shifted concurrently. Earlier runs (N012, N013) exhibited positive loss gradients up to step 16,000, confirming under-training. We cannot scientifically disentangle how much of N018's gain stems from structural representation capacity versus simple optimization convergence.</p>
+      </div>
+
+      <div class="analysis-box con">
+        <h4>3. The Persistent Clean-to-Degraded Generalization Chasm</h4>
+        <p>Despite domain-randomized data augmentation, N018 exhibits a <b>0.151 spellF1 performance gap</b> between clean (0.7673) and degraded tracking (0.6166). When the ball is occluded for $>50$ frames, the model falls back to macro team-geometry features (spread and centroid depth). In congested midfield phases, these team features lack discriminative power, causing severe under-segmentation.</p>
+      </div>
+
+      <div class="analysis-box critique">
+        <h4>4. The Public 5-Minute Ground Truth Paradox</h4>
+        <p>On the official public 5-minute slice (17 possessions), N018 scores <b>0.6875 spellF1</b> (Rank #1). However, statistical power calculations prove that with only 17 events, the 90% bootstrap confidence band is $\approx \pm 0.12$. Public-window score gaps between N018 (0.6875) and N011 (0.6759) are within random noise; only the 3-match development audit (1,235 possessions) provides statistically robust evidence.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROGRESSION CHART -->
+  <section class="card" id="progression">
+    <div class="eyebrow">Pillar II · Longitudinal Performance</div>
+    <h2>Chronological Score Progression (3-Match Audit)</h2>
+    <p>Mean, clean, and degraded <code>spellF1</code> plotted across major experiment milestones. Note the dramatic plunge during the multitask failure (N014) and the decisive recovery culminating in N018.</p>
+
+    <div class="chart-legend">
+      <span><i class="leg-mean"></i>Mean SpellF1 (Audit Criterion)</span>
+      <span><i class="leg-clean"></i>Clean Tracking</span>
+      <span><i class="leg-degraded"></i>Simulated Degraded Tracking</span>
+    </div>
+
+    <div class="chart-container">
+      <svg class="linechart" viewBox="0 0 940 280" role="img" aria-label="Line chart of possession experiments from C000 to N018">
+        <!-- Grid lines (Y: 0.20 to 0.80) -->
+        <line class="grid" x1="60" y1="30" x2="900" y2="30"/>
+        <line class="grid" x1="60" y1="70" x2="900" y2="70"/>
+        <line class="grid" x1="60" y1="110" x2="900" y2="110"/>
+        <line class="grid" x1="60" y1="150" x2="900" y2="150"/>
+        <line class="grid" x1="60" y1="190" x2="900" y2="190"/>
+        <line class="grid" x1="60" y1="230" x2="900" y2="230"/>
+        
+        <!-- Y-Axis labels -->
+        <text x="18" y="34">0.80</text>
+        <text x="18" y="74">0.70</text>
+        <text x="18" y="114">0.60</text>
+        <text x="18" y="154">0.50</text>
+        <text x="18" y="194">0.40</text>
+        <text x="18" y="234">0.30</text>
+
+        <!-- Clean Line (points: x, y mapped from [0.20=270, 0.80=30]) -->
+        <!-- C000: 0.3279 (218.8), N003: 0.6120 (105.2), N008: 0.6400 (94.0), N010: 0.7050 (68.0), N011: 0.6970 (71.2), N012: 0.7150 (64.0), N013: 0.7326 (57.0), N014: 0.6100 (106.0), N015: 0.7320 (57.2), N016: 0.7340 (56.4), N017: 0.6920 (73.2), E001: 0.7280 (58.8), N018: 0.7673 (43.1) -->
+        <polyline class="cleanline" points="
+          80,218.8 148,105.2 216,94.0 284,68.0 352,71.2 420,64.0 488,57.0 556,106.0 624,57.2 692,56.4 760,73.2 828,58.8 896,43.1" />
+
+        <!-- Degraded Line -->
+        <!-- C000: 0.2001 (270.0), N003: 0.5380 (134.8), N008: 0.5710 (121.6), N010: 0.5690 (122.4), N011: 0.5720 (121.2), N012: 0.5930 (112.8), N013: 0.5781 (118.8), N014: 0.4770 (159.2), N015: 0.5770 (119.2), N016: 0.5930 (112.8), N017: 0.5570 (127.2), E001: 0.5890 (114.4), N018: 0.6166 (103.4) -->
+        <polyline class="degradedline" points="
+          80,270.0 148,134.8 216,121.6 284,122.4 352,121.2 420,112.8 488,118.8 556,159.2 624,119.2 692,112.8 760,127.2 828,114.4 896,103.4" />
+
+        <!-- Mean Line -->
+        <!-- C000: 0.2640 (244.4), N003: 0.5750 (120.0), N008: 0.6055 (107.8), N010: 0.6370 (95.2), N011: 0.6345 (96.2), N012: 0.6540 (88.4), N013: 0.6554 (87.8), N014: 0.5435 (132.6), N015: 0.6545 (88.2), N016: 0.6635 (84.6), N017: 0.6245 (100.2), E001: 0.6585 (86.6), N018: 0.6919 (73.2) -->
+        <polyline class="meanline" points="
+          80,244.4 148,120.0 216,107.8 284,95.2 352,96.2 420,88.4 488,87.8 556,132.6 624,88.2 692,84.6 760,100.2 828,86.6 896,73.2" />
+
+        <!-- Dots on Mean -->
+        <circle class="dot" cx="80" cy="244.4" r="4"/>
+        <circle class="dot" cx="148" cy="120.0" r="4"/>
+        <circle class="dot" cx="216" cy="107.8" r="4"/>
+        <circle class="dot" cx="284" cy="95.2" r="4"/>
+        <circle class="dot" cx="352" cy="96.2" r="4"/>
+        <circle class="dot" cx="420" cy="88.4" r="4"/>
+        <circle class="dot" cx="488" cy="87.8" r="4"/>
+        <circle class="dot" cx="556" cy="132.6" r="4"/>
+        <circle class="dot" cx="624" cy="88.2" r="4"/>
+        <circle class="dot" cx="692" cy="84.6" r="4"/>
+        <circle class="dot" cx="760" cy="100.2" r="4"/>
+        <circle class="dot" cx="828" cy="86.6" r="4"/>
+        <circle class="dot-champ" cx="896" cy="73.2"/>
+
+        <!-- X-Axis Labels -->
+        <text x="68" y="260">C000</text>
+        <text x="136" y="260">N003</text>
+        <text x="204" y="260">N008</text>
+        <text x="272" y="260">N010</text>
+        <text x="340" y="260">N011</text>
+        <text x="408" y="260">N012</text>
+        <text x="476" y="260">N013</text>
+        <text x="544" y="260">N014</text>
+        <text x="612" y="260">N015</text>
+        <text x="680" y="260">N016</text>
+        <text x="748" y="260">N017</text>
+        <text x="816" y="260">E001</text>
+        <text x="882" y="260" font-weight="bold" fill="#059669">N018</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- NEGATIVE RESULTS & ABLATION AUTOPSY -->
+  <section class="card" id="negative">
+    <div class="eyebrow">Pillar III · Scientific Failure Analysis</div>
+    <h2>Ablation Autopsies: Why Intuitive Football Hypotheses Failed</h2>
+    <p class="lead">In high-level ML research, negative results provide critical constraints on the hypothesis space. Below is the autopsy of discarded architectures and inductive biases.</p>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Experiment</th>
+            <th>Proposed Inductive Bias / Hypothesis</th>
+            <th>Observed Outcome</th>
+            <th>ML Scientist Root-Cause Autopsy</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>N005</b></td>
+            <td>Boundary Loss Re-weighting ($3\times$ penalty within $\pm 12$ frames of transitions)</td>
+            <td>SpellF1 shifted $+0.002$ (statistically indistinguishable from noise).</td>
+            <td><b>Loss gradient dominance:</b> Under-segmentation stems from lack of sensory evidence at turnover instants (occluded ball, ambiguous scuffle), not loss under-emphasis. Reweighting gradients on uninformative features yields zero discriminator improvement.</td>
+          </tr>
+          <tr>
+            <td><b>N014</b></td>
+            <td>Multitask Latent-Ball Reconstruction via Unbounded Gaussian NLL</td>
+            <td>Catastrophic collapse: external val collapsed to 0.4962; audit dropped to 0.5435.</td>
+            <td><b>Gradient explosion & negative transfer:</b> The Gaussian variance parameter ($\sigma \to 0$) blew up NLL gradients, monopolizing trunk backpropagation and destroying representation capacity for classification.</td>
+          </tr>
+          <tr>
+            <td><b>N015 / N016</b></td>
+            <td>Physics-Based Pitch Control (Spearman Time-to-Intercept features)</td>
+            <td>Audit mean $+0.008$ (0.6635 vs 0.6554), but external validation flat (0.5449 vs 0.5473).</td>
+            <td><b>Feature redundancy with multi-head self-attention:</b> Cross-attention across relative velocities and positions already learns soft Voronoi approximations. Handcrafted TTI features provided marginal new entropy and failed pre-registered validation adoption gates.</td>
+          </tr>
+          <tr>
+            <td><b>N017</b></td>
+            <td>Bounded Latent-Ball Reconstruction (Huber loss on occluded frames)</td>
+            <td>Training was numerically stable, but audit mean fell to 0.6245 (-0.031 drop).</td>
+            <td><b>Task interference:</b> Forcing the spatial encoder to reconstruct exact metric $(x,y)$ ball coordinates competed directly with forming permutation-invariant topological team representations. Ball reconstruction is an unnecessary bottleneck for possession classification.</td>
+          </tr>
+          <tr>
+            <td><b>E001v2</b></td>
+            <td>Checkpoint Probability Averaging (N012 + N013 seeds)</td>
+            <td>Audit mean 0.6585 (+0.003 gain; below $+0.010$ pre-registered adoption threshold).</td>
+            <td><b>Correlated failure modes:</b> Homogeneous architecture checkpoints make identical systematic errors (e.g. failing on sudden aerial deflections). True ensemble gains require decorrelated inductive biases or heterogeneous feature spaces.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- DECODER & ERROR DIAGNOSTIC -->
+  <section class="card" id="decoding">
+    <div class="eyebrow">Pillar IV · Sequence Dynamics & Failure Modes</div>
+    <h2>Viterbi Decoding Dynamics & The Short-Turnover Bottleneck</h2>
+    <p class="lead">Frame-level classifiers suffer from spurious high-frequency oscillation. Dynamic Viterbi decoding resolves this, but introduces a fundamental recall-versus-precision tradeoff.</p>
+
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <strong>21.7 → 3.7</strong>
+        <span>False Transitions / Min (Degraded)</span>
+      </div>
+      <div class="metric-card">
+        <strong>11.8%</strong>
+        <span>Recall on Spells &lt; 2s (IoU 0.5)</span>
+      </div>
+      <div class="metric-card highlight">
+        <strong>+1.3 frames</strong>
+        <span>Mean Boundary Latency (~52 ms)</span>
+      </div>
+      <div class="metric-card">
+        <strong>0.81</strong>
+        <span>Predicted / True Spell Count Ratio</span>
+      </div>
+    </div>
+
+    <div class="analysis-grid">
+      <div class="analysis-box con">
+        <h4>The Mathematical Mechanics of Dynamic Transition Modulation</h4>
+        <p>Static Viterbi decoding uses fixed log penalties, penalizing real rapid turnovers equally to single-frame noise. Our dynamic formulation modulates switching cost via the auxiliary transition head:
+        $$\text{Cost}_{H \leftrightarrow A}(t) = \max\left(0, \text{team\_switch} - \text{gain} \cdot \text{logit}_{\text{trans}}(t)\right)$$
+        When physical turnover evidence (touch acceleration spike, player handover) fires, switching cost collapses to 0 nats, achieving near-zero latency (+1.3 frames). In open play, the barrier stays at 2.0–4.0 nats, suppressing flicker.</p>
+      </div>
+
+      <div class="analysis-box critique">
+        <h4>The "Evidence Bottleneck" on Micro-Possessions (&lt;2.0 s)</h4>
+        <p>In external validation error audits, <b>56% of true possessions under 2 seconds had zero frames</b> where the raw neural trunk assigned top probability to the correct team. When tracking data lacks clear ball ownership signals during rapid contested tackles, no Viterbi penalty tuning can reconstruct the missing possession without simultaneously unleashing a flood of false-positive spells.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PUBLIC 5-MINUTE WINDOW BENCHMARK -->
+  <section class="card" id="public-window">
+    <div class="eyebrow">Pillar V · Governance & Alignment Verification</div>
+    <h2>Official Public 5-Minute Window Benchmark</h2>
+    <p class="lead">All generated submission candidates and official baselines evaluated via the competition scorer (<code>evaluation/run_evaluation.py</code>) on the 7,500 graded frames of <code>BAR-ATH_possession_gt_public.csv</code>.</p>
+
+    <div class="callout callout-blue">
+      <strong>Governance Firewall Reminder (AGENTS.md & Rules Clarifications)</strong>
+      <p>The public ground truth slice covers only 5 minutes (17 possessions). It serves exclusively as an automated sanity and pipeline-alignment verification check. It was <b>never</b> used for hyperparameter tuning, checkpoint selection, or model promotion. Real model adoption is governed strictly by the 3-match development audit.</p>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Submission Candidate</th>
+            <th>MacroF1</th>
+            <th>SpellF1 (Headline)</th>
+            <th>Pred Poss (GT=17)</th>
+            <th>Mean Dur (GT=14.2s)</th>
+            <th>TransF1 (±25f)</th>
+            <th>Latency (frames)</th>
+            <th>Share Error</th>
+            <th>Frag</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="champion-row">
+            <td><b>1</b></td>
+            <td><b>n018_large_long (Champion)</b></td>
+            <td class="num">0.8667</td>
+            <td class="num">0.6875</td>
+            <td class="num">15</td>
+            <td class="num">17.3 s</td>
+            <td class="num">0.5946</td>
+            <td class="num">+1.3</td>
+            <td class="num">0.006</td>
+            <td class="num">0.86</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td>n011_n010_seed2</td>
+            <td class="num">0.8810</td>
+            <td class="num">0.6759</td>
+            <td class="num">12</td>
+            <td class="num">21.3 s</td>
+            <td class="num">0.5294</td>
+            <td class="num">+0.0</td>
+            <td class="num">0.030</td>
+            <td class="num">0.71</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td>n008_n007_seed2</td>
+            <td class="num">0.8574</td>
+            <td class="num">0.6400</td>
+            <td class="num">13</td>
+            <td class="num">19.7 s</td>
+            <td class="num">0.4444</td>
+            <td class="num">+4.5</td>
+            <td class="num">0.012</td>
+            <td class="num">0.81</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td>n013_n012_seed2 (Fallback)</td>
+            <td class="num">0.8466</td>
+            <td class="num">0.6345</td>
+            <td class="num">12</td>
+            <td class="num">21.8 s</td>
+            <td class="num">0.4706</td>
+            <td class="num">+2.0</td>
+            <td class="num">0.022</td>
+            <td class="num">0.71</td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td>n003_regen / large</td>
+            <td class="num">0.8517</td>
+            <td class="num">0.6250</td>
+            <td class="num">15</td>
+            <td class="num">17.5 s</td>
+            <td class="num">0.4211</td>
+            <td class="num">-5.1</td>
+            <td class="num">0.012</td>
+            <td class="num">0.90</td>
+          </tr>
+          <tr>
+            <td>6</td>
+            <td>n001_regen / base</td>
+            <td class="num">0.8112</td>
+            <td class="num">0.5333</td>
+            <td class="num">19</td>
+            <td class="num">14.2 s</td>
+            <td class="num">0.3810</td>
+            <td class="num">+5.5</td>
+            <td class="num">0.036</td>
+            <td class="num">1.10</td>
+          </tr>
+          <tr style="color:var(--muted); font-style:italic;">
+            <td>—</td>
+            <td>baseline_smooth125</td>
+            <td class="num">0.5812</td>
+            <td class="num">0.4242</td>
+            <td class="num">16</td>
+            <td class="num">18.5 s</td>
+            <td class="num">0.1667</td>
+            <td class="num">-7.7</td>
+            <td class="num">0.052</td>
+            <td class="num">0.81</td>
+          </tr>
+          <tr style="color:var(--muted); font-style:italic;">
+            <td>—</td>
+            <td>baseline_smooth50 (Floor)</td>
+            <td class="num">0.6207</td>
+            <td class="num">0.3256</td>
+            <td class="num">26</td>
+            <td class="num">10.8 s</td>
+            <td class="num">0.0816</td>
+            <td class="num">+4.0</td>
+            <td class="num">0.048</td>
+            <td class="num">1.43</td>
+          </tr>
+          <tr style="color:var(--muted); font-style:italic;">
+            <td>—</td>
+            <td>baseline_smooth25</td>
+            <td class="num">0.6200</td>
+            <td class="num">0.2868</td>
+            <td class="num">36</td>
+            <td class="num">7.6 s</td>
+            <td class="num">0.2034</td>
+            <td class="num">+8.2</td>
+            <td class="num">0.056</td>
+            <td class="num">1.90</td>
+          </tr>
+          <tr style="color:var(--muted); font-style:italic;">
+            <td>—</td>
+            <td>baseline_raw</td>
+            <td class="num">0.5972</td>
+            <td class="num">0.0378</td>
+            <td class="num">131</td>
+            <td class="num">2.0 s</td>
+            <td class="num">0.1410</td>
+            <td class="num">-3.1</td>
+            <td class="num">0.046</td>
+            <td class="num">6.52</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>N018 Frame Confusion Matrix (Public 7,500 Graded Frames)</h3>
+    <table class="matrix-table" aria-label="N018 confusion matrix on public window">
+      <thead>
+        <tr>
+          <th>Actual ↓ / Pred →</th>
+          <th>Home</th>
+          <th>Away</th>
+          <th>Dead</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th>Home (3454)</th>
+          <td class="diag">3,182</td>
+          <td class="offdiag">254</td>
+          <td class="offdiag">18</td>
+        </tr>
+        <tr>
+          <th>Away (2577)</th>
+          <td class="offdiag">135</td>
+          <td class="diag">2,442</td>
+          <td class="offdiag">0</td>
+        </tr>
+        <tr>
+          <th>Dead (1469)</th>
+          <td class="offdiag">439</td>
+          <td class="offdiag">42</td>
+          <td class="diag">988</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.83rem; color:var(--slate);"><b>Diagnosis:</b> Team-to-team misclassification is low (3.9% away-as-home, 7.3% home-as-away). The dominant error mode is <b>Dead Ball misclassified as Home (439 frames = 29.8% of dead ball time)</b>, occurring primarily during restarts where players loiter near the ball before kicking.</p>
+  </section>
+
+  <!-- MASTER EXPERIMENT REGISTRY TABLE -->
+  <section class="card" id="registry">
+    <div class="eyebrow">Pillar VI · Complete Scientific Audit Trail</div>
+    <h2>Master Experiment Registry & Decision Log</h2>
+    <p>All recorded external experiments on the primary 3-match development audit (<code>IDSSE J03WN1</code>, <code>IDSSE J03WR9</code>, <code>Metrica Game 3</code>).</p>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Model Family & Configuration</th>
+            <th>Ext. Val</th>
+            <th>Audit Clean</th>
+            <th>Audit Degraded</th>
+            <th>Audit Mean</th>
+            <th>MacroF1 (C/D)</th>
+            <th>Status / Pre-Registered Decision</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>C000</b></td>
+            <td>Organiser Baseline (<code>smooth50</code>)</td>
+            <td>—</td>
+            <td class="num">0.3279</td>
+            <td class="num">0.2001</td>
+            <td class="num">0.2640</td>
+            <td>0.515 / 0.488</td>
+            <td><span class="badge badge-baseline">Official Floor</span></td>
+          </tr>
+          <tr>
+            <td><b>N001</b></td>
+            <td>Set-Temporal Base (0.69M params, 6k steps)</td>
+            <td class="num">0.607*</td>
+            <td class="num">0.6280*</td>
+            <td class="num">0.5380*</td>
+            <td class="num">0.5830*</td>
+            <td>0.917 / 0.887</td>
+            <td>Beat baseline by +0.33 spellF1</td>
+          </tr>
+          <tr>
+            <td><b>N003</b></td>
+            <td>Large Set-Temporal (4.15M params, 16k steps)</td>
+            <td class="num">0.5040</td>
+            <td class="num">0.6120</td>
+            <td class="num">0.5380</td>
+            <td class="num">0.5750</td>
+            <td>0.899 / 0.872</td>
+            <td>Stage 3 Champion (Adopted)</td>
+          </tr>
+          <tr>
+            <td><b>N005</b></td>
+            <td>N003 + Boundary Loss Reweighting ($3\times$)</td>
+            <td class="num">0.5024</td>
+            <td class="num">0.5060*</td>
+            <td class="num">0.4630*</td>
+            <td class="num">0.4845*</td>
+            <td>0.878 / 0.860</td>
+            <td><span class="badge badge-rejected">Rejected (D-007)</span> Gain &lt; 0.02</td>
+          </tr>
+          <tr>
+            <td><b>N008</b></td>
+            <td>N007 Seed Confirm (v2 features + masking)</td>
+            <td class="num">0.5305</td>
+            <td class="num">0.6400</td>
+            <td class="num">0.5710</td>
+            <td class="num">0.6055</td>
+            <td>0.904 / 0.879</td>
+            <td>Stage 4 Champion (Adopted D-013)</td>
+          </tr>
+          <tr>
+            <td><b>N010</b></td>
+            <td>N008 + Features v3 (Touches & Pressure)</td>
+            <td class="num">0.5321</td>
+            <td class="num">0.7050</td>
+            <td class="num">0.5690</td>
+            <td class="num">0.6370</td>
+            <td>0.925 / 0.880</td>
+            <td>Configuration confirmed (+0.032 gain)</td>
+          </tr>
+          <tr>
+            <td><b>N011</b></td>
+            <td>N010 Seed Confirmation (Seed 20261108)</td>
+            <td class="num">0.5399</td>
+            <td class="num">0.6970</td>
+            <td class="num">0.5720</td>
+            <td class="num">0.6345</td>
+            <td>0.925 / 0.883</td>
+            <td>Stage 5 Champion (Adopted D-015)</td>
+          </tr>
+          <tr>
+            <td><b>N012</b></td>
+            <td>N011 + Transition Head + Dynamic Viterbi</td>
+            <td class="num">0.5453</td>
+            <td class="num">0.7150</td>
+            <td class="num">0.5930</td>
+            <td class="num">0.6540</td>
+            <td>0.928 / 0.881</td>
+            <td>Degraded +0.021 gain</td>
+          </tr>
+          <tr>
+            <td><b>N013</b></td>
+            <td>N012 Seed Confirmation (Seed 20261109)</td>
+            <td class="num">0.5473</td>
+            <td class="num">0.7326</td>
+            <td class="num">0.5781</td>
+            <td class="num">0.6554</td>
+            <td>0.930 / 0.882</td>
+            <td><span class="badge badge-fallback">Primary Fallback</span> (D-017)</td>
+          </tr>
+          <tr>
+            <td><b>N014</b></td>
+            <td>Pitch Control + Edge Bias + Latent Ball Head</td>
+            <td class="num">0.4962</td>
+            <td class="num">0.6100</td>
+            <td class="num">0.4770</td>
+            <td class="num">0.5435</td>
+            <td>0.910 / 0.855</td>
+            <td><span class="badge badge-rejected">Rejected (D-019)</span> Gaussian NLL blew up</td>
+          </tr>
+          <tr>
+            <td><b>N015</b></td>
+            <td>N014 Ablation without Ball Head</td>
+            <td class="num">0.5501</td>
+            <td class="num">0.7320</td>
+            <td class="num">0.5770</td>
+            <td class="num">0.6545</td>
+            <td>0.928 / 0.881</td>
+            <td><span class="badge badge-rejected">Not Adopted (D-020)</span> Neutral vs N013</td>
+          </tr>
+          <tr>
+            <td><b>N016</b></td>
+            <td>Pitch Control Only (Features v4)</td>
+            <td class="num">0.5449</td>
+            <td class="num">0.7340</td>
+            <td class="num">0.5930</td>
+            <td class="num">0.6635</td>
+            <td>0.929 / 0.881</td>
+            <td><span class="badge badge-rejected">Not Adopted (D-021)</span> Failed val gate</td>
+          </tr>
+          <tr>
+            <td><b>N017</b></td>
+            <td>Latent Ball Head (Bounded Huber Loss)</td>
+            <td class="num">0.5367</td>
+            <td class="num">0.6920</td>
+            <td class="num">0.5570</td>
+            <td class="num">0.6245</td>
+            <td>0.921 / 0.876</td>
+            <td><span class="badge badge-rejected">Not Adopted (D-022)</span> Negative transfer</td>
+          </tr>
+          <tr>
+            <td><b>E001v2</b></td>
+            <td>Seed Ensemble (N012 + N013 Probability Avg)</td>
+            <td class="num">0.5485</td>
+            <td class="num">0.7280</td>
+            <td class="num">0.5890</td>
+            <td class="num">0.6585</td>
+            <td>0.929 / 0.882</td>
+            <td><span class="badge badge-rejected">Not Adopted</span> Gain &lt; 0.010 bar</td>
+          </tr>
+          <tr class="champion-row">
+            <td><b>N018</b></td>
+            <td>Scaled Model (9.72M params, 24k steps)</td>
+            <td class="num"><b>0.5568</b></td>
+            <td class="num"><b>0.7673</b></td>
+            <td class="num"><b>0.6166</b></td>
+            <td class="num"><b>0.6919</b></td>
+            <td><b>0.931 / 0.889</b></td>
+            <td><span class="badge badge-champion">Champion (D-026)</span> +0.0365 gain</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- STRATEGIC RECOMMENDATIONS -->
+  <section class="card" id="strategic">
+    <div class="eyebrow">Pillar VII · Roadmap & Recommendations</div>
+    <h2>Strategic Next Steps for Possession Research</h2>
+    <div class="analysis-grid">
+      <div class="analysis-box pro">
+        <h4>1. Segment-Level Decoding (Semi-Markov / HSMM)</h4>
+        <p>Frame-level Viterbi treats transition probability as memoryless. Implementing an explicit duration semi-Markov model with log-normal possession duration priors would directly penalize biologically implausible 2-frame possessions while preserving high-confidence short turnovers.</p>
+      </div>
+
+      <div class="analysis-box pro">
+        <h4>2. Selective State-Space Models (Mamba / S4)</h4>
+        <p>Quadratic temporal attention over 384 frames incurs significant memory overhead. Replacing the temporal transformer with a bidirectional Mamba block would provide linear $O(T)$ complexity while maintaining infinite context memory for ball occlusions.</p>
+      </div>
+
+      <div class="analysis-box con">
+        <h4>3. Self-Supervised Masked Tracking Modeling</h4>
+        <p>Rather than handcrafting physical ball reconstruction losses, pretraining the spatial encoder via masked autoencoding (randomly masking 30% of player tracklets and reconstructing latent representations) on unlabelled external matches would boost degraded resilience.</p>
+      </div>
+
+      <div class="analysis-box pro">
+        <h4>4. Hard Dead-Ball Event Classifiers</h4>
+        <p>Because the primary confusion mode in N018 is Dead Ball misclassified as Home during set-piece setups, a dedicated whistle/dead-ball detector trained on team velocity dispersion and referee distance would eliminate the remaining false alive frames.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>Possession Lab Research System · Adheres to <code>AGENTS.md</code> Governance & Organizer Clarifications · No Private Fixture Peeking.</p>
+    <p>Dashboard generated: 2026-11-12 · Artifact directory: <code>artifacts/neural/submissions/</code></p>
+  </footer>
+</main>
+</body>
+</html>

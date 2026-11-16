@@ -1,0 +1,88 @@
+[project]
+name = "possession-lab"
+version = "0.1.0"
+description = "Frame-level football possession inference and research tools for More Than A Hack 2027"
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "numpy>=1.26,<3.0",
+    "pandas>=2.1,<3.0",
+]
+
+[project.optional-dependencies]
+starter = ["kloppy==3.18.0", "matplotlib>=3.8,<4.0"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8,<10",
+    "ruff>=0.9,<1.0",
+    "pylint>=3,<5",
+    "mypy>=1.12,<2",
+    "pre-commit>=4,<5",
+]
+mlops = ["mlflow>=3,<4"]
+
+[build-system]
+requires = ["hatchling>=1.25,<2"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/possession_lab"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+src = ["src"]
+include = ["src/**/*.py", "tests/**/*.py", "scripts/**/*.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+mypy_path = "src"
+exclude = ["starter", "evaluation"]
+
+[[tool.mypy.overrides]]
+module = ["games", "starter.*", "official_documentation.*", "evaluation.*", "torch", "torch.*", "lxml", "lxml.*", "kloppy", "kloppy.*", "pandas", "pandas.*"]
+follow_imports = "skip"
+ignore_missing_imports = true
+
+[tool.pylint.main]
+py-version = "3.11"
+ignore = ["starter", "evaluation"]
+# The adapter imports the untouched organiser namespace from the repository root.
+source-roots = ["."]
+
+[tool.pylint.format]
+max-line-length = 100
+
+[tool.pylint.basic]
+# Conventional tensor-dimension and log-partition notation used in PathCRF.
+good-names = ["i", "j", "k", "ex", "Run", "_", "B", "T", "K", "N", "D", "M", "F_dim", "T_s", "logZ", "_compute_logZ"]
+
+[tool.pylint.design]
+# Vectorized feature builders keep intermediate arrays named for reviewability.
+max-args = 8
+max-positional-arguments = 8
+max-locals = 45
+max-attributes = 20
+max-statements = 60
+min-public-methods = 1
+
+[tool.pylint.typecheck]
+# Optional research dependencies live in the isolated neural environment, not base CI.
+ignored-modules = ["torch", "torch.nn", "torch.utils.data", "lxml", "lxml.etree", "timesfm"]
+generated-members = ["numpy.*", "numpy.ndarray.*"]
+
+[tool.pylint.messages_control]
+disable = ["duplicate-code"]

@@ -1,0 +1,55 @@
+# N018 — larger and longer N013 (D-024; Tiago 2026-11-09: more parameters, longer training). d_model 256, 4 spatial + 8 temporal layers, 8 heads (9.7M params vs 4.15M), 24 000 steps. Parent config: N012 with a different seed (D-016 confirmation). N012 = N011 + possession-change head (transition_head; D-016). N011 = N010 with seed 20261108 (D-015 champion). N010 = N008 + feature version 3 (individual, marking, pressure and ball-touch features; EDA_INDIVIDUAL.md). N008 = N007 + seed 2; N007 = N006 + EDA data engineering: low-detection frames (<4 tracked objects) masked from the loss, and Metrica sample
+# data added (game 1 train, game 2 val, game 3 test; D-010). Otherwise as N006, same data and frozen splits, trained on IDSSE/DFL (CC BY 4.0) + SkillCorner open data (MIT).
+# SkillCorner split frozen 2026-11-06 before any model saw it: sorted match ids, index%4==3 -> test,
+# index%8==1 -> val, rest train. IDSSE split identical to N001. External data only.
+
+[experiment]
+name = "n018_large_long"
+seed = 20261113
+hypothesis = """Capacity + length (D-024): N013 and N012 both peaked at their final step, and the football-aware add-ons
+did not help (D-018 - D-022), so the model is limited by capacity / training length rather than inputs. A 2.3x wider/deeper
+network (d 256, 4+8 layers, 8 heads) trained 1.5x longer (24 000 steps, same 16 windows per step) improves val spellF1."""
+
+[data]
+canonical_dir = "data/external/canonical"
+train = ["idsse_J03WMX", "idsse_J03WOH", "idsse_J03WOY", "idsse_J03WPY",
+         "skillcorner_1874553", "skillcorner_1899585", "skillcorner_1927964", "skillcorner_1953632",
+         "skillcorner_1959846", "skillcorner_1996435", "skillcorner_2006229", "skillcorner_2007448",
+         "skillcorner_2007721", "skillcorner_2010085", "skillcorner_2013725", "skillcorner_2016236", "metrica_1"]
+val = ["idsse_J03WQQ", "skillcorner_1886347", "skillcorner_1996436", "skillcorner_2015213", "metrica_2"]
+test = ["idsse_J03WN1", "idsse_J03WR9",
+        "skillcorner_1925299", "skillcorner_1986691", "skillcorner_2006363", "skillcorner_2011166",
+        "skillcorner_2017461", "metrica_3"]
+degrade_eval_seed = 7
+
+[model]
+d_model = 256
+spatial_layers = 4
+temporal_layers = 8
+heads = 8
+ff_mult = 4
+dropout = 0.1
+transition_head = true
+
+[train]
+window = 384
+batch_size = 4
+accum = 4
+max_players = 30
+steps = 24000
+lr = 3e-4
+weight_decay = 0.05
+warmup = 500
+grad_clip = 1.0
+clean_prob = 0.25
+num_workers = 3
+feature_version = 3
+min_players_label = 4
+eval_every = 1000
+eval_stride = 192
+transition_weight = 1.0
+transition_radius = 2
+
+[decode]
+team_switch = 8.0
+dead_switch = 4.0

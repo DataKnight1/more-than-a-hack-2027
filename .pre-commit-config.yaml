@@ -1,0 +1,22 @@
+# Local hooks only. Set UV_PROJECT_ENVIRONMENT, then: uv run --no-sync pre-commit install
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: Ruff (project modules)
+        entry: uv run --no-sync ruff check
+        language: system
+        files: ^(src|tests|scripts)/.*\.py$
+        pass_filenames: true
+      - id: ruff-format
+        name: Ruff formatter (project modules)
+        entry: uv run --no-sync ruff format --check
+        language: system
+        files: ^(src|tests|scripts)/.*\.py$
+        pass_filenames: true
+      - id: privacy-scan
+        name: Git tracked-file privacy scan
+        entry: uv run --no-sync python scripts/privacy_scan.py
+        language: system
+        pass_filenames: false
+        always_run: true

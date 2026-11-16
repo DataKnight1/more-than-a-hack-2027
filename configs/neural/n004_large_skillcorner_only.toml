@@ -1,0 +1,44 @@
+# N004 — leave-provider-out transfer check: N003 architecture trained on SkillCorner ONLY, tested on
+# IDSSE (provider never seen in training). Mirror of N001 (IDSSE-only -> SkillCorner). Splits as N002.
+
+[experiment]
+name = "n004_large_skillcorner_only"
+seed = 20261106
+hypothesis = """The large architecture trained on one provider transfers to an unseen provider
+better than N001 did (N001: +0.105 spellF1 over smooth50 on unseen SkillCorner)."""
+
+[data]
+canonical_dir = "data/external/canonical"
+train = ["skillcorner_1874553", "skillcorner_1899585", "skillcorner_1927964", "skillcorner_1953632",
+         "skillcorner_1959846", "skillcorner_1996435", "skillcorner_2006229", "skillcorner_2007448",
+         "skillcorner_2007721", "skillcorner_2010085", "skillcorner_2013725", "skillcorner_2016236"]
+val = ["skillcorner_1886347", "skillcorner_1996436", "skillcorner_2015213"]
+test = ["idsse_J03WN1", "idsse_J03WR9", "idsse_J03WQQ"]
+degrade_eval_seed = 7
+
+[model]
+d_model = 192
+spatial_layers = 3
+temporal_layers = 6
+heads = 6
+ff_mult = 4
+dropout = 0.1
+
+[train]
+window = 384
+batch_size = 8
+accum = 2
+max_players = 30
+steps = 12000
+lr = 4e-4
+weight_decay = 0.05
+warmup = 300
+grad_clip = 1.0
+clean_prob = 0.25
+num_workers = 6
+eval_every = 2000
+eval_stride = 192
+
+[decode]
+team_switch = 8.0
+dead_switch = 4.0

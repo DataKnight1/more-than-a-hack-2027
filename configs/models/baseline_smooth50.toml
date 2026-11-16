@@ -1,0 +1,13 @@
+# Deterministic copy of the official reference model, for reproduction smoke tests.
+# This is not a new model or a claim of improved performance.
+[experiment]
+name = "agentic-baseline50"
+hypothesis = "Can our namespaced adapter reproduce official baseline_smooth50?"
+seed = 42
+source_class = "licensed-unsupervised-input"
+
+[model]
+family = "nearest_player_majority"
+smoothing_half_window = 50
+# false preserves the exact organiser baseline labels, including ungraded frames.
+apply_ungraded_x = false

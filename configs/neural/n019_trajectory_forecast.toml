@@ -1,0 +1,67 @@
+# N019: Confidence-Aware Trajectory Forecasting & Physical Imputation (D-027).
+# Hypothesis: Conservative, confidence-gated trajectory estimates for occluded ball frames
+# recover turnover and possession-change evidence without replacing observed coordinates.
+# Features: v3 + 4 ball trajectory channels (forecast_x, forecast_y, forecast_conf, forecast_imputed).
+# Base architecture: 9.72M parameters (d_model=256, 4 spatial + 8 temporal layers, 8 heads).
+
+[experiment]
+name = "n019_trajectory_forecast"
+seed = 20261119
+hypothesis = """Confidence-aware physical trajectory forecasting: in scenes with missing ball detections,
+conservative, confidence-gated trajectory estimates (+4 ball channels: Hermite spline interpolation,
+damped constant-velocity extrapolation, exponential confidence decay, and imputation flag)
+recover possession-change evidence while preserving the reliable observed-tracking features of N018."""
+
+[data]
+canonical_dir = "data/external/canonical"
+train = ["idsse_J03WMX", "idsse_J03WOH", "idsse_J03WOY", "idsse_J03WPY",
+         "skillcorner_1874553", "skillcorner_1899585", "skillcorner_1927964", "skillcorner_1953632",
+         "skillcorner_1959846", "skillcorner_1996435", "skillcorner_2006229", "skillcorner_2007448",
+         "skillcorner_2007721", "skillcorner_2010085", "skillcorner_2013725", "skillcorner_2016236", "metrica_1"]
+val = ["idsse_J03WQQ", "skillcorner_1886347", "skillcorner_1996436", "skillcorner_2015213", "metrica_2"]
+test = ["idsse_J03WN1", "idsse_J03WR9",
+        "skillcorner_1925299", "skillcorner_1986691", "skillcorner_2006363", "skillcorner_2011166",
+        "skillcorner_2017461", "metrica_3"]
+degrade_eval_seed = 7
+
+[model]
+d_model = 256
+spatial_layers = 4
+temporal_layers = 8
+heads = 8
+ff_mult = 4
+dropout = 0.1
+ball_features = 13
+transition_head = true
+timesfm_enabled = true
+rigl_enabled = true
+rigl_sparsity = 0.50
+rigl_interval = 10
+rigl_stop_step = 18000
+rigl_drop_fraction = 0.30
+rigl_seed = 20261119
+
+[train]
+window = 384
+batch_size = 4
+accum = 4
+max_players = 30
+steps = 24000
+lr = 3e-4
+weight_decay = 0.05
+warmup = 500
+grad_clip = 1.0
+clean_prob = 0.25
+num_workers = 3
+feature_version = 3
+min_players_label = 4
+eval_every = 1000
+eval_stride = 192
+transition_weight = 1.0
+transition_radius = 2
+
+[decode]
+team_switch = 2.0
+dead_switch = 4.0
+transition_gain = 1.0
+

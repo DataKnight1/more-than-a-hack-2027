@@ -1,0 +1,33 @@
+name: Quality - public code and synthetic tests only
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Resolve environment from committed lockfile
+        run: uv sync --group dev --locked --python 3.11.9
+      - name: Install CPU PyTorch for neural tests
+        run: uv pip install --python .venv/bin/python 'torch==2.7.1' --index-url https://download.pytorch.org/whl/cpu
+      - name: Unit tests on synthetic inputs
+        run: uv run --no-sync pytest -q tests
+      - name: Ruff
+        run: uv run --no-sync ruff check src tests scripts
+      - name: Ruff formatting
+        run: uv run --no-sync ruff format --check src tests scripts
+      - name: Type checking
+        run: uv run --no-sync mypy src/possession_lab
+      - name: Pylint
+        run: uv run --no-sync pylint src/possession_lab
+      - name: Safety preflight
+        run: uv run --no-sync python scripts/privacy_scan.py

@@ -1,0 +1,44 @@
+# N001 — first set-temporal transformer on IDSSE/DFL external data (CC BY 4.0).
+# Split frozen 2026-11-06 BEFORE any model was trained or evaluated; never re-split by result.
+# Selection signal: external validation match only. Challenge public GT is never read.
+
+[experiment]
+name = "n001_set_temporal_base"
+seed = 20261106
+hypothesis = """A permutation-invariant set encoder + temporal transformer, trained on clean external
+tracking degraded towards automatic-tracking conditions, plus Viterbi switch-penalty decoding,
+beats the organiser nearest-player smooth50 baseline on spellF1 on held-out external matches
+under the same degradation."""
+
+[data]
+canonical_dir = "data/external/canonical"
+train = ["idsse_J03WMX", "idsse_J03WOH", "idsse_J03WOY", "idsse_J03WPY"]
+val = ["idsse_J03WQQ"]
+test = ["idsse_J03WN1", "idsse_J03WR9"]
+degrade_eval_seed = 7
+
+[model]
+d_model = 96
+spatial_layers = 2
+temporal_layers = 4
+heads = 4
+ff_mult = 4
+dropout = 0.1
+
+[train]
+window = 256
+batch_size = 16
+max_players = 30
+steps = 6000
+lr = 6e-4
+weight_decay = 0.05
+warmup = 300
+grad_clip = 1.0
+clean_prob = 0.1
+num_workers = 6
+eval_every = 1000
+eval_stride = 128
+
+[decode]
+team_switch = 8.0
+dead_switch = 4.0

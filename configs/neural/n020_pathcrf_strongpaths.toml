@@ -1,0 +1,50 @@
+# N020 PathCRF Strong Paths (Full PathCRF with edge emissions, strong supervision on approved DFL matches, and fused decoding)
+
+[experiment]
+name = "n020_pathcrf_strongpaths"
+seed = 20261113
+hypothesis = """Genuine PathCRF model predicting player-to-player possession paths from player trajectories alone,
+supervised on approved external training data (event-derived paths on DFL train matches + team/dead supervision),
+transferring edge evidence via probabilistic fusion to H/A/D/X possession classification."""
+
+[data]
+canonical_dir = "data/external/canonical"
+train = ["idsse_J03WMX", "idsse_J03WOH", "idsse_J03WOY", "idsse_J03WPY",
+         "skillcorner_1874553", "skillcorner_1899585", "skillcorner_1927964", "skillcorner_1953632",
+         "skillcorner_1959846", "skillcorner_1996435", "skillcorner_2006229", "skillcorner_2007448",
+         "skillcorner_2007721", "skillcorner_2010085", "skillcorner_2013725", "skillcorner_2016236", "metrica_1"]
+val = ["idsse_J03WQQ", "skillcorner_1886347", "skillcorner_1996436", "skillcorner_2015213", "metrica_2"]
+test = ["idsse_J03WN1", "idsse_J03WR9", "metrica_3"]
+degrade_eval_seed = 7
+
+[model]
+feat_dim = 8
+team_size = 11
+macro_dim = 64
+micro_dim = 128
+seq_dim = 128
+crf_edge_dim = 16
+heads = 4
+dropout = 0.1
+
+[train]
+sample_fps = 5.0
+window_seconds = 10.0
+window = 50
+batch_size = 4
+accum = 4
+steps = 2000
+lr = 3e-4
+weight_decay = 0.05
+warmup = 200
+grad_clip = 1.0
+w_dead = 1.0
+w_team = 1.0
+w_edge = 0.5
+w_crf = 0.5
+eval_every = 500
+
+[decode]
+team_switch = 2.0
+dead_switch = 4.0
+path_weight = 0.5

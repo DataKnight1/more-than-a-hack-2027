@@ -1,0 +1,132 @@
+"""Fixed local inference on the challenge tactical ATD -> 199,319-row submission CSV.
+
+Governance: the model and decoder are frozen (trained and selected on external data only). This
+script performs inference and automatic format validation; it never reads any ground truth and
+prints only hashes and the official validator's summary — never tracking content.
+
+CPU inference uses deterministic PyTorch algorithms, float32 and a fixed thread count. CUDA uses
+float16 autocast and permits nondeterministic operations with warnings. Quantising log probabilities
+to 1e-3 reduces sensitivity to rounding but does not guarantee identical outputs across machines.
+Reproduce and compare the exact submission file in the recorded environment before release.
+
+Usage::
+
+    .venv-neural/Scripts/python scripts/neural/predict_challenge.py --run n001_set_temporal_base
+        [--out artifacts/neural/submissions/n001.csv]
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "src"))
+
+import numpy as np  # noqa: E402
+import torch  # noqa: E402
+
+from possession_lab.cli import write_csv  # noqa: E402
+from possession_lab.neural.atd import load_challenge_match  # noqa: E402
+from possession_lab.neural.canonical import LABEL_CHARS  # noqa: E402
+from possession_lab.neural.data import predict_log_probs  # noqa: E402
+from possession_lab.neural.decode import DecodeConfig, decode_match  # noqa: E402
+from possession_lab.neural.model import ModelConfig, SetTemporalNet  # noqa: E402
+
+QUANTUM = 1e-3
+
+
+def sha256(path: Path) -> str:
+    """Hex SHA-256 of a file."""
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def main() -> int:
+    """Run frozen inference and the official validator."""
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--run", required=True)
+    parser.add_argument("--ckpt", default="best.pt")
+    parser.add_argument(
+        "--checkpoint",
+        type=Path,
+        default=None,
+        help="checkpoint path (defaults to --ckpt inside the run directory)",
+    )
+    parser.add_argument(
+        "--decoder",
+        type=Path,
+        default=None,
+        help="JSON file containing frozen decoder settings (defaults to the run's evaluation)",
+    )
+    parser.add_argument("--out", type=Path, default=None)
+    parser.add_argument(
+        "--device",
+        default=None,
+        help="compute device ('cuda' or 'cpu'; defaults to cuda if available)",
+    )
+    args = parser.parse_args()
+
+    dev_str = args.device or ("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device(dev_str)
+    if device.type == "cpu":
+        torch.use_deterministic_algorithms(True)
+        torch.set_num_threads(4)
+    else:
+        torch.use_deterministic_algorithms(True, warn_only=True)
+
+    print(f"Running inference on device: {device}")
+    run_dir = ROOT / "artifacts" / "neural" / "runs" / args.run
+    ckpt_path = args.checkpoint or run_dir / args.ckpt
+    state = torch.load(ckpt_path, map_location=device, weights_only=False)
+    model = SetTemporalNet(ModelConfig(**state["model_cfg"])).to(device)
+    model.load_state_dict(state["model"])
+    model.eval()
+    cfg = state["config"]
+    decoder_file = args.decoder or run_dir / "external_eval.json"
+    if args.decoder is None and not decoder_file.exists():
+        decoder_file = run_dir / "external_eval_primary.json"
+    decoder_info = json.loads(decoder_file.read_text())["decoder"]
+    decoder = DecodeConfig(
+        decoder_info["team_switch"],
+        decoder_info["dead_switch"],
+        decoder_info.get("transition_gain", 0.0),
+    )
+
+    match = load_challenge_match()
+    logp = predict_log_probs(
+        model,
+        match,
+        cfg["train"]["window"],
+        cfg["train"]["eval_stride"],
+        device,
+        cfg["train"]["max_players"],
+    )
+    logp = (np.round(logp / QUANTUM) * QUANTUM).astype(np.float32)
+    codes = decode_match(logp, match.period, decoder)
+    labels = LABEL_CHARS[codes]
+
+    out = (args.out or ROOT / "artifacts" / "neural" / "submissions" / f"{args.run}.csv").resolve()
+    digest = write_csv(out, labels.tolist())
+    print(f"checkpoint sha256 {sha256(ckpt_path)}")
+    print(
+        f"decoder team_switch={decoder.team_switch} dead_switch={decoder.dead_switch} "
+        f"transition_gain={decoder.transition_gain}"
+    )
+    shown = out.relative_to(ROOT) if out.is_relative_to(ROOT) else out
+    print(f"wrote {shown} ({len(labels)} rows) sha256 {digest}")
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "evaluation" / "validate_submission.py"), str(out)],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    print(result.stdout.strip()[-1500:])
+    return result.returncode
+
+
+if __name__ == "__main__":
+    sys.exit(main())
